@@ -1,0 +1,7 @@
+obj/
+GPATH
+GRTAGS
+GTAGS
+*~
+\#*\#
+.depend
