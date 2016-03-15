@@ -13,9 +13,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
 #include <string.h>
 
+#include "utils/alloc.h"
 #include "utils/error.h"
 
 #include "rds.h"
@@ -37,8 +37,31 @@
 #define MASK_TA (1 << BIT_TA)
 #define MASK_TP (1 << BIT_TP)
 
-void rds_init (Rds *rds) {
-  memset(rds, 0, sizeof *rds);
+#define RADIO_NAME_MAX_LENGTH 8
+#define RADIO_TEXT_MAX_LENGTH 64
+
+#define DATA_TYPE_MUSIC 0
+#define DATA_TYPE_TRAFFIC 1
+#define DATA_TYPE_SPEECH 2
+
+struct Rds {
+  char radio_name[RADIO_NAME_MAX_LENGTH + 1]; /* Nom actuel de la radio. */
+  char new_radio_name[RADIO_NAME_MAX_LENGTH + 1]; /* Nom de la radio en cours de parsing. */
+
+  char radio_text[RADIO_TEXT_MAX_LENGTH + 1]; /* Texte actuel de la radio. */
+  char new_radio_text[RADIO_TEXT_MAX_LENGTH + 1]; /* Texte de la radio en cours de parsing. */
+
+  uint16_t bit_fields;
+};
+
+Rds *rds_new (void) {
+  return pnew(Rds);
+}
+
+void rds_free (Rds *rds) {
+  if (rds != NULL)
+    free(rds);
+
   return;
 }
 
@@ -79,8 +102,8 @@ static inline void __decode_basic_tuning_and_switching_info(Rds *rds, uint16_t b
   #endif
 
   rds->bit_fields &= ~MASK_NAME;
-  memcpy(rds->radio_name, rds->new_radio_name, RDS_RADIO_NAME_MAX_LENGTH);
-  memset(rds->new_radio_name, 0, RDS_RADIO_NAME_MAX_LENGTH);
+  memcpy(rds->radio_name, rds->new_radio_name, RADIO_NAME_MAX_LENGTH);
+  memset(rds->new_radio_name, 0, RADIO_NAME_MAX_LENGTH);
 
   return;
 }
@@ -126,8 +149,8 @@ static inline void __decode_radio_text (Rds *rds, uint16_t blocks[], int version
   #endif
 
   rds->bit_fields &= ~MASK_TEXT;
-  memcpy(rds->radio_text, rds->new_radio_text, RDS_RADIO_TEXT_MAX_LENGTH);
-  memset(rds->new_radio_text, 0, RDS_RADIO_TEXT_MAX_LENGTH);
+  memcpy(rds->radio_text, rds->new_radio_text, RADIO_TEXT_MAX_LENGTH);
+  memset(rds->new_radio_text, 0, RADIO_TEXT_MAX_LENGTH);
 
   return;
 }
@@ -157,9 +180,17 @@ void rds_decode (Rds *rds, uint16_t blocks[]) {
 
 int rds_get_data_type (Rds *rds) {
   if (rds->bit_fields & (MASK_TA | MASK_TP))
-    return RDS_DATA_TYPE_TRAFFIC;
+    return DATA_TYPE_TRAFFIC;
   if (rds->bit_fields & MASK_MS)
-    return RDS_DATA_TYPE_MUSIC;
+    return DATA_TYPE_MUSIC;
 
-  return RDS_DATA_TYPE_SPEECH;
+  return DATA_TYPE_SPEECH;
+}
+
+const char *rds_get_radio_name (Rds *rds) {
+  return rds->radio_name;
+}
+
+const char *rds_get_radio_text (Rds *rds) {
+  return rds->radio_text;
 }

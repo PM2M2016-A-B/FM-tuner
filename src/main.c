@@ -70,7 +70,7 @@ int main (int argc, char *argv[]) {
   Fm_tuner fm_tuner;
   uint16_t blocks[4];
   int data_exists;
-  Rds rds;
+  Rds *rds;
   Time prev, cur;
 
   (void)argc;
@@ -94,18 +94,20 @@ int main (int argc, char *argv[]) {
   if (__set_channel(&fm_tuner, 933) == -1)
     goto err;
 
-  rds_init(&rds);
+  rds = rds_new();
 
   for (;;) {
     time_get_cur(&prev);
     fm_tuner_read_rds(&fm_tuner, blocks, &data_exists);
 
     if (data_exists)
-      rds_decode(&rds, blocks);
+      rds_decode(rds, blocks);
 
     time_get_cur(&cur);
     sleep_m(40 - time_diff(&prev, &cur));
   }
+
+  rds_free(rds);
 
   if (fm_tuner_close(&fm_tuner) == -1)
     exit(EXIT_FAILURE);
