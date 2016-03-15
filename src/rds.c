@@ -79,8 +79,8 @@ static inline void __decode_basic_tuning_and_switching_info(Rds *rds, uint16_t b
   #endif
 
   rds->bit_fields &= ~MASK_NAME;
-  memcpy(rds->radio_name, rds->new_radio_name, RADIO_NAME_MAX_LENGTH);
-  memset(rds->new_radio_name, 0, RADIO_NAME_MAX_LENGTH);
+  memcpy(rds->radio_name, rds->new_radio_name, RDS_RADIO_NAME_MAX_LENGTH);
+  memset(rds->new_radio_name, 0, RDS_RADIO_NAME_MAX_LENGTH);
 
   return;
 }
@@ -126,8 +126,8 @@ static inline void __decode_radio_text (Rds *rds, uint16_t blocks[], int version
   #endif
 
   rds->bit_fields &= ~MASK_TEXT;
-  memcpy(rds->radio_text, rds->new_radio_text, RADIO_TEXT_MAX_LENGTH);
-  memset(rds->new_radio_text, 0, RADIO_TEXT_MAX_LENGTH);
+  memcpy(rds->radio_text, rds->new_radio_text, RDS_RADIO_TEXT_MAX_LENGTH);
+  memset(rds->new_radio_text, 0, RDS_RADIO_TEXT_MAX_LENGTH);
 
   return;
 }
@@ -153,4 +153,13 @@ void rds_decode (Rds *rds, uint16_t blocks[]) {
   }
 
   return;
+}
+
+int rds_get_data_type (Rds *rds) {
+  if (rds->bit_fields & (MASK_TA | MASK_TP))
+    return RDS_DATA_TYPE_TRAFFIC;
+  if (rds->bit_fields & (MASK_MS))
+    return RDS_DATA_TYPE_MUSIC;
+
+  return RDS_DATA_TYPE_SPEECH;
 }

@@ -18,15 +18,19 @@
 
 #include <stdint.h>
 
-#define RADIO_NAME_MAX_LENGTH 8
-#define RADIO_TEXT_MAX_LENGTH 64
+#define RDS_RADIO_NAME_MAX_LENGTH 8
+#define RDS_RADIO_TEXT_MAX_LENGTH 64
+
+#define RDS_DATA_TYPE_MUSIC 0
+#define RDS_DATA_TYPE_TRAFFIC 1
+#define RDS_DATA_TYPE_SPEECH 2
 
 typedef struct Rds {
-  char radio_name[RADIO_NAME_MAX_LENGTH + 1]; /* Nom actuel de la radio. */
-  char new_radio_name[RADIO_NAME_MAX_LENGTH + 1]; /* Nom de la radio en cours de parsing. */
+  char radio_name[RDS_RADIO_NAME_MAX_LENGTH + 1]; /* Nom actuel de la radio. */
+  char new_radio_name[RDS_RADIO_NAME_MAX_LENGTH + 1]; /* Nom de la radio en cours de parsing. */
 
-  char radio_text[RADIO_TEXT_MAX_LENGTH + 1]; /* Texte actuel de la radio. */
-  char new_radio_text[RADIO_TEXT_MAX_LENGTH + 1]; /* Texte de la radio en cours de parsing. */
+  char radio_text[RDS_RADIO_TEXT_MAX_LENGTH + 1]; /* Texte actuel de la radio. */
+  char new_radio_text[RDS_RADIO_TEXT_MAX_LENGTH + 1]; /* Texte de la radio en cours de parsing. */
 
   uint16_t bit_fields;
 } Rds;
@@ -35,5 +39,7 @@ typedef struct Rds {
 void rds_init (Rds *rds);
 
 void rds_decode (Rds *rds, uint16_t blocks[]);
+
+int rds_get_data_type (Rds *rds);
 
 #endif /* _RDS_H_ INCLUDED */

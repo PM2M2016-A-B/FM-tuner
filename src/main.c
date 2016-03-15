@@ -97,8 +97,10 @@ int main (int argc, char *argv[]) {
   for (;;) {
     fm_tuner_read_rds(&fm_tuner, blocks, &data_exists);
 
-    if (data_exists)
+    if (data_exists) {
       rds_decode(&rds, blocks);
+      printf("data type: %d\n", rds_get_data_type(&rds));
+    }
     sleep_m(40);
   }
 
