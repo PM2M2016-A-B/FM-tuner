@@ -16,7 +16,17 @@
 #ifndef _PTIME_H_
 #define _PTIME_H_
 
+#include <sys/time.h>
+
+typedef struct timeval Time;
+
 /* Endort le processus courant pendant n millisecondes. */
-void sleep_m (unsigned int nb_millisec);
+void sleep_m (long nb_millisec);
+
+/* Récupère le temps écoulé depuis le 1er janvier 1970. */
+void time_get_cur (Time *time);
+
+/* Retourne la différence entre 2 temps en millisecondes. */
+long time_diff (Time *time1, Time *time2);
 
 #endif /* _PTIME_H_ INCLUDED */

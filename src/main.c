@@ -65,11 +65,13 @@ static int __set_channel (Fm_tuner *fm_tuner, int value) {
   return fm_tuner_set_channel(fm_tuner, value);
 }
 
+/* TMP code. */
 int main (int argc, char *argv[]) {
   Fm_tuner fm_tuner;
   uint16_t blocks[4];
   int data_exists;
   Rds rds;
+  Time prev, cur;
 
   (void)argc;
   (void)argv;
@@ -95,13 +97,14 @@ int main (int argc, char *argv[]) {
   rds_init(&rds);
 
   for (;;) {
+    time_get_cur(&prev);
     fm_tuner_read_rds(&fm_tuner, blocks, &data_exists);
 
-    if (data_exists) {
+    if (data_exists)
       rds_decode(&rds, blocks);
-      printf("data type: %d\n", rds_get_data_type(&rds));
-    }
-    sleep_m(40);
+
+    time_get_cur(&cur);
+    sleep_m(40 - time_diff(&prev, &cur));
   }
 
   if (fm_tuner_close(&fm_tuner) == -1)

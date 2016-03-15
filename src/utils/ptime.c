@@ -14,12 +14,16 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
-#include "time.h"
+#include "ptime.h"
 
-void sleep_m (unsigned int nb_millisec) {
+void sleep_m (long nb_millisec) {
   struct timespec req;
+
+  if (nb_millisec < 0)
+    return;
 
   req.tv_sec = nb_millisec / 1000;
   req.tv_nsec = (long)(nb_millisec % 1000) * 1000000;
@@ -27,4 +31,13 @@ void sleep_m (unsigned int nb_millisec) {
   nanosleep(&req, NULL);
 
   return;
+}
+
+void time_get_cur (Time *time) {
+  gettimeofday(time, NULL);
+  return;
+}
+
+long time_diff (Time *time1, Time *time2) {
+  return (time2->tv_usec  - time1->tv_usec) / 1000.0 + (time2->tv_sec - time1->tv_sec) * 1000.0;
 }

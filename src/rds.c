@@ -158,7 +158,7 @@ void rds_decode (Rds *rds, uint16_t blocks[]) {
 int rds_get_data_type (Rds *rds) {
   if (rds->bit_fields & (MASK_TA | MASK_TP))
     return RDS_DATA_TYPE_TRAFFIC;
-  if (rds->bit_fields & (MASK_MS))
+  if (rds->bit_fields & MASK_MS)
     return RDS_DATA_TYPE_MUSIC;
 
   return RDS_DATA_TYPE_SPEECH;
