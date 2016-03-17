@@ -15,7 +15,7 @@
 
 #include "pmath.h"
 
-char *bytes_to_binary(int x, int n, char *buf) {
+char *bytes_to_binary_text(int x, int n, char *buf) {
   int i = 0, j;
 
   for (j = 0x80 << 8 * (n - 1); j > 0; j >>= 1)

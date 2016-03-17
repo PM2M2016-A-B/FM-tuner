@@ -16,15 +16,12 @@
 #ifndef _SOCKET_H_
 #define _SOCKET_H_
 
-#include <endian.h>
-
 #if defined __unix__ /* UNIX */
   #include <arpa/inet.h> /* in_addr_t, in_port_t */
-  #include <stdint.h> /* uint8_t, uint16_t, uint32_t */
   #include <sys/select.h> /* select & fd_set */
   typedef int Socket;
 #else
-  #error "Socket is compatible with this platform."
+  #error "Socket is not compatible with this platform."
 #endif
 
 /* Une IP. Vraiment! */

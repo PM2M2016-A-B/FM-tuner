@@ -78,7 +78,7 @@ void handler_loop (Socket_set *ss, void *user_value) {
   sleep_time = SLEEP_DELAY - time_diff(&t_prev, &t_cur);
 
   // TMP
-  debug("Sleep %ldms.\n", sleep_time);
+  // debug("Sleep %ldms.\n", sleep_time);
 
   sleep_m(sleep_time);
   time_get_cur(&t_prev);

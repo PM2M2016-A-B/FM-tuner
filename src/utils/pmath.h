@@ -19,6 +19,6 @@
 /* Convertit les n bytes de poids faible de l'entier x
    au format binaire, et met le résultat dans buf.
    Retourne buf. */
-char *bytes_to_binary(int x, int n, char *buf);
+char *bytes_to_binary_text(int x, int n, char *buf);
 
 #endif /* _PMATH_H_ INCLUDED */

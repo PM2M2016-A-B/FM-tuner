@@ -15,7 +15,6 @@
 
 #include <arpa/inet.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "hw/i2c.h"
 #include "hw/pin.h"
@@ -193,7 +192,7 @@ void fm_tuner_print_registers (Fm_tuner *fm_tuner) {
 
   for (i = 0; i < FM_TUNER_REGISTERS_N; i++)
     printf("%s    0x%04X    0b%s\n", reg_names[i], fm_tuner->regs[i],
-           bytes_to_binary(fm_tuner->regs[i], FM_TUNER_REGISTER_SIZE, buf));
+           bytes_to_binary_text(fm_tuner->regs[i], FM_TUNER_REGISTER_SIZE, buf));
 
   return;
 }
