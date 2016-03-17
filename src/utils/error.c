@@ -16,18 +16,34 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "error.h"
+
+static inline void __error (const char *msg, va_list ap) {
+  vfprintf(stderr, msg, ap);
+  fprintf(stderr, " (errno=%s)\n", strerror(errno));
+
+  return;
+}
+
+void fatal_error (const char *msg, ...) {
+  va_list ap;
+
+  va_start(ap, msg);
+  __error(msg, ap);
+  va_end(ap);
+
+  exit(EXIT_FAILURE);
+}
 
 int error (const char *msg, ...) {
   va_list ap;
 
   va_start(ap, msg);
-  vfprintf(stderr, msg, ap);
+  __error(msg, ap);
   va_end(ap);
-
-  fprintf(stderr, " (errno=%s)\n", strerror(errno));
 
   return -1;
 }

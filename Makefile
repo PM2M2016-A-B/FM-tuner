@@ -12,7 +12,7 @@
 # GNU General Public License for more details.                            #
 #                                                                         #
 # You should have received a copy of the GNU General Public License       #
-# along with this program.  If not, see <http://www.gnu.org/licenses/>. 1 #
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.   #
 #                                                                         #
 # ----------------------------------------------------------------------- #
 
@@ -23,7 +23,7 @@ INC_DIR = src
 OBJ_DIR = obj
 BIN_DIR = bin
 
-SUB_DIRS = utils hw
+SUB_DIRS = hw net utils
 
 CXX = gcc
 CXXFLAGS = -Wall -Wextra -pedantic -std=c99 -O0 -D_XOPEN_SOURCE=700 -DEUROPE_VERSION

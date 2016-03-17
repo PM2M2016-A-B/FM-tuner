@@ -40,10 +40,6 @@
 #define RADIO_NAME_MAX_LENGTH 8
 #define RADIO_TEXT_MAX_LENGTH 64
 
-#define DATA_TYPE_MUSIC 0
-#define DATA_TYPE_TRAFFIC 1
-#define DATA_TYPE_SPEECH 2
-
 struct Rds {
   char radio_name[RADIO_NAME_MAX_LENGTH + 1]; /* Nom actuel de la radio. */
   char new_radio_name[RADIO_NAME_MAX_LENGTH + 1]; /* Nom de la radio en cours de parsing. */
@@ -65,14 +61,14 @@ void rds_free (Rds *rds) {
   return;
 }
 
-static inline void __get_group_type (uint16_t blocks[], int *id, int *version) {
+static void __get_group_type (uint16_t blocks[], int *id, int *version) {
   *id = (blocks[RDSB] & 0xF000) >> 12;
   *version = !!(blocks[RDSB] & 0x0800);
 
   return;
 }
 
-static inline void __decode_basic_tuning_and_switching_info(Rds *rds, uint16_t blocks[]) {
+static void __decode_basic_tuning_and_switching_info(Rds *rds, uint16_t blocks[]) {
   int off = blocks[RDSB] & 0x0003;
   int chars;
 
@@ -108,7 +104,7 @@ static inline void __decode_basic_tuning_and_switching_info(Rds *rds, uint16_t b
   return;
 }
 
-static inline void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
+static void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
   int off = blocks[RDSB] & 0x000F;
   int chars;
   int i, completed;
@@ -158,11 +154,19 @@ static inline void __decode_radio_text (Rds *rds, uint16_t blocks[], int version
 void rds_decode (Rds *rds, uint16_t blocks[]) {
   int id, version;
 
+  #ifdef DEBUG
+    char version_c;
+  #endif
+
   __get_group_type(blocks, &id, &version);
   rds->bit_fields &= ~MASK_TP;
   rds->bit_fields |= (!!(blocks[RDSB] & 0x0800)) << BIT_TP;
 
-  printf("TYPE %d%c\n", id, !version ? 'A' : 'B');
+  #ifdef DEBUG
+    version_c = !version ? 'A' : 'B';
+  #endif
+
+  debug("Group type: %d%c\n", id, version_c);
 
   switch (id) {
     case 0:
@@ -172,7 +176,7 @@ void rds_decode (Rds *rds, uint16_t blocks[]) {
       __decode_radio_text(rds, blocks, version);
       break;
     default:
-      debug("Unsupported group type: %d%c.\n", id, !version ? 'A' : 'B');
+      debug("Unsupported group type: %d%c.\n", id, version_c);
   }
 
   return;

@@ -13,22 +13,21 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _ERROR_H_
-#define _ERROR_H_
+#ifndef _HANDLER_H_
+#define _HANDLER_H_
 
-/* Affiche un message d'erreur sur stderr ainsi que errno,
-   puis quitte le programme. */
-void fatal_error (const char *msg, ...);
+#include "../fm_tuner.h"
+#include "../rds.h"
+#include "../utils/socket.h"
 
-/* Affiche un message d'erreur sur stderr ainsi que errno.
-   Retourne toujours -1. */
-int error (const char *msg, ...);
+typedef struct Handler_value {
+  Fm_tuner *fm_tuner;
+  Rds *rds;
+} Handler_value;
 
-#ifdef DEBUG
-  /* Affiche un message de debug sur stderr. */
-  void debug (const char *format, ...);
-#else
-  #define debug()
-#endif
+int handler_event (Socket sock, int id, char *buffer, int len, void *user_value);
+void *handler_join (Socket sock, int id, void *user_value);
+void handler_quit (Socket sock, int id, void *user_value);
+void handler_loop (Socket_set *ss, void *user_value);
 
-#endif /* _ERROR_H_ INCLUDED */
+#endif /* _HANDLER_H_ INCLUDED */

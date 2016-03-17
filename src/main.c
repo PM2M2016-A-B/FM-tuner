@@ -13,20 +13,32 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
+#include <signal.h>
 #include <stdlib.h>
 
 #include "hw/led.h"
-#include "rds.h"
+#include "net/handler.h"
+#include "net/server.h"
 #include "utils/error.h"
-#include "utils/ptime.h"
 
 #include "fm_tuner.h"
 
-static inline void __disable_leds (void) {
-  int i;
+#define SERVER_MAX_CLIENTS 10
+#define SERVER_DEFAULT_PORT 9502
 
-  debug("Disable leds.\n");
+static Fm_tuner fm_tuner;
+
+static void __disable_signals (void) {
+  sigset_t set;
+
+  sigfillset(&set);
+  sigprocmask(SIG_BLOCK, &set, NULL);
+
+  return;
+}
+
+static void __disable_leds (void) {
+  int i;
 
   for (i = 0; i < LEDS_N; i++)
     led_set_state(i, LED_INACTIVE);
@@ -34,7 +46,7 @@ static inline void __disable_leds (void) {
   return;
 }
 
-static inline void __enable_tuner (Fm_tuner *fm_tuner) {
+static void __enable_tuner (void) {
   Fm_tuner_conf conf = {
     .i2c_id = 1,
     .pin_rst = 45,
@@ -44,77 +56,53 @@ static inline void __enable_tuner (Fm_tuner *fm_tuner) {
 
   debug("Init FM tuner.\n");
 
-  if (fm_tuner_init(fm_tuner, &conf) == -1)
+  if (fm_tuner_init(&fm_tuner, &conf) == -1)
     exit(EXIT_FAILURE);
 
   #ifdef DEBUG
     debug("Registers data at init:\n");
-    fm_tuner_print_registers(fm_tuner);
+    fm_tuner_print_registers(&fm_tuner);
   #endif
 
   return;
 }
 
-static int __set_volume (Fm_tuner *fm_tuner, int value) {
-  debug("Set volume.\n");
-  return fm_tuner_set_volume(fm_tuner, value);
+static void __disable_tuner (void) {
+  fm_tuner_close(&fm_tuner);
+  return;
 }
 
-static int __set_channel (Fm_tuner *fm_tuner, int value) {
-  debug("Set channel: %d\n", value);
-  return fm_tuner_set_channel(fm_tuner, value);
-}
+/* --------------------------------------------------------------------- */
 
-/* TMP code. */
-int main (int argc, char *argv[]) {
-  Fm_tuner fm_tuner;
-  uint16_t blocks[4];
-  int data_exists;
-  Rds *rds;
-  Time prev, cur;
+int main (void) {
+  Handler_value handler_value = {
+    .fm_tuner = &fm_tuner,
+    .rds = rds_new()
+  };
+  Server_conf conf = {
+    .port = SERVER_DEFAULT_PORT,
+    .max_clients = SERVER_MAX_CLIENTS,
+    .user_value = &handler_value,
+    .handlers = {
+      .event = handler_event,
+      .join = handler_join,
+      .quit = handler_quit,
+      .loop = handler_loop
+    }
+  };
 
-  (void)argc;
-  (void)argv;
+  __disable_signals();
+   __disable_leds();
+   __enable_tuner();
+  atexit(__disable_tuner);
 
-  __disable_leds();
-  __enable_tuner(&fm_tuner);
+  // TMP
+  printf("volume init %d\n", fm_tuner_set_volume(&fm_tuner, 5));
+  printf("channel init %d\n", fm_tuner_set_channel(&fm_tuner, 933));
 
-  if (__set_volume(&fm_tuner, 5) == -1)
-    goto err;
+  server_run(&conf, 500);
 
-  /* Nostalgie: 933. */
-  /* Rire et chanson: 950. */
-  /* Beur FM: 978. */
-  /* Fun radio: 988. */
-  /* Radio classique: 1024. */
-  /* NRJ: 1032. */
-  /* RMC: 1042. */
-  /* Europe 1: 1046. */
-  /* Chérie FM: 1058. */
-  if (__set_channel(&fm_tuner, 933) == -1)
-    goto err;
-
-  rds = rds_new();
-
-  for (;;) {
-    time_get_cur(&prev);
-    fm_tuner_read_rds(&fm_tuner, blocks, &data_exists);
-
-    if (data_exists)
-      rds_decode(rds, blocks);
-
-    time_get_cur(&cur);
-    sleep_m(40 - time_diff(&prev, &cur));
-  }
-
-  rds_free(rds);
-
-  if (fm_tuner_close(&fm_tuner) == -1)
-    exit(EXIT_FAILURE);
+  rds_free(handler_value.rds);
 
   exit(EXIT_SUCCESS);
-
- err:
-  fm_tuner_close(&fm_tuner);
-  exit(EXIT_FAILURE);
 }

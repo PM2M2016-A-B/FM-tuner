@@ -111,7 +111,7 @@ int fm_tuner_init (Fm_tuner *fm_tuner, Fm_tuner_conf *conf) {
   fm_tuner->regs[REG_SYSCONFIG1] |= MASK_ENABLE_RDS;
 
   /* Volume au minimum. */
-  __set_volume(fm_tuner, 1);
+  __set_volume(fm_tuner, 0);
 
   if (fm_tuner_write_registers(fm_tuner) == -1)
     goto err;
