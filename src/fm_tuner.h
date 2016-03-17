@@ -18,38 +18,11 @@
 
 #include <stdint.h>
 
-/* Nombre de registres du tuner. */
-#define FM_TUNER_REGISTERS_N 16
-
-/* Taille en bytes d'un registre du tuner. */
-#define FM_TUNER_REGISTER_SIZE 2
-
-/* Registres du tuner. */
-#define REG_DEVICEID 0x00
-#define REG_CHIPID  0x01
-#define REG_POWERCFG 0x02
-#define REG_CHANNEL 0x03
-#define REG_SYSCONFIG1 0x04
-#define REG_SYSCONFIG2 0x05
-#define REG_SYSCONFIG3 0x06
-#define REG_TEST1 0x07
-#define REG_TEST2 0x08
-#define REG_BOOTCONFIG 0x09
-#define REG_STATUSRSSI 0x0A
-#define REG_READCHAN 0x0B
-#define REG_RDSA 0x0C
-#define REG_RDSB 0x0D
-#define REG_RDSC 0x0E
-#define REG_RDSD 0x0F
-
 /* Intervalle du volume du tuner. */
 #define FM_TUNER_VOLUME_MIN 0
 #define FM_TUNER_VOLUME_MAX 15
 
-typedef struct Fm_tuner {
-  int bus;
-  uint16_t regs[FM_TUNER_REGISTERS_N];
-} Fm_tuner;
+typedef struct Fm_tuner Fm_tuner;
 
 /* Configuration du tuner. */
 typedef struct Fm_tuner_conf {
@@ -64,13 +37,11 @@ typedef struct Fm_tuner_conf {
   int tuner_addr;
 } Fm_tuner_conf;
 
-/* Initialise et donne l'accès à un tuner.
-   Retourne -1 en cas d'échec, sinon 0. */
-int fm_tuner_init (Fm_tuner *fm_tuner, Fm_tuner_conf *conf);
+/* Crée et donne l'accès à un tuner. */
+Fm_tuner *fm_tuner_new (Fm_tuner_conf *conf);
 
-/* Ferme l'accès à un tuner.
-   Retourne -1 en cas d'échec, sinon 0. */
-int fm_tuner_close (Fm_tuner *fm_tuner);
+/* Libère un tuner. */
+void fm_tuner_free (Fm_tuner *fm_tuner);
 
 /* Ecrit les registres contenus dans fm_tuner sur le tuner physique.
    Retourne -1 en cas d'échec, sinon 0. */

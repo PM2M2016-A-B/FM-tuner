@@ -26,7 +26,7 @@
 #define SERVER_MAX_CLIENTS 10
 #define SERVER_DEFAULT_PORT 9502
 
-static Fm_tuner fm_tuner;
+static Fm_tuner *fm_tuner;
 
 static void __disable_signals (void) {
   sigset_t set;
@@ -46,29 +46,27 @@ static void __disable_leds (void) {
   return;
 }
 
-static void __enable_tuner (void) {
+Fm_tuner *__create_tuner (void) {
   Fm_tuner_conf conf = {
     .i2c_id = 1,
     .pin_rst = 45,
     .pin_sdio = 12,
     .tuner_addr = 0x10
   };
+  Fm_tuner *fm_tuner = fm_tuner_new(&conf);
 
   debug("Init FM tuner.\n");
 
-  if (fm_tuner_init(&fm_tuner, &conf) == -1)
-    exit(EXIT_FAILURE);
-
   #ifdef DEBUG
     debug("Registers data at init:\n");
-    fm_tuner_print_registers(&fm_tuner);
+    fm_tuner_print_registers(fm_tuner);
   #endif
 
-  return;
+  return fm_tuner;
 }
 
-static void __disable_tuner (void) {
-  fm_tuner_close(&fm_tuner);
+static void __delete_tuner (void) {
+  fm_tuner_free(fm_tuner);
   return;
 }
 
@@ -76,7 +74,7 @@ static void __disable_tuner (void) {
 
 int main (void) {
   Handler_value handler_value = {
-    .fm_tuner = &fm_tuner,
+    .fm_tuner = __create_tuner(),
     .rds = rds_new()
   };
   Server_conf conf = {
@@ -91,14 +89,15 @@ int main (void) {
     }
   };
 
+  fm_tuner = handler_value.fm_tuner;
+  atexit(__delete_tuner);
+
   __disable_signals();
-   __disable_leds();
-   __enable_tuner();
-  atexit(__disable_tuner);
+  __disable_leds();
 
   // TMP
-  printf("volume init %d\n", fm_tuner_set_volume(&fm_tuner, 5));
-  printf("channel init %d\n", fm_tuner_set_channel(&fm_tuner, 933));
+  printf("volume init %d\n", fm_tuner_set_volume(fm_tuner, 5));
+  printf("channel init %d\n", fm_tuner_set_channel(fm_tuner, 933));
 
   server_run(&conf, 500);
 

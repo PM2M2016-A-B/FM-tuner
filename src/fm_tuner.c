@@ -18,6 +18,7 @@
 
 #include "hw/i2c.h"
 #include "hw/pin.h"
+#include "utils/alloc.h"
 #include "utils/error.h"
 #include "utils/pmath.h"
 #include "utils/ptime.h"
@@ -31,6 +32,29 @@
 #else
   #error "Undefined program version."
 #endif
+/* Nombre de registres du tuner. */
+#define FM_TUNER_REGISTERS_N 16
+
+/* Taille en bytes d'un registre du tuner. */
+#define FM_TUNER_REGISTER_SIZE 2
+
+/* Registres du tuner. */
+#define REG_DEVICEID 0x00
+#define REG_CHIPID  0x01
+#define REG_POWERCFG 0x02
+#define REG_CHANNEL 0x03
+#define REG_SYSCONFIG1 0x04
+#define REG_SYSCONFIG2 0x05
+#define REG_SYSCONFIG3 0x06
+#define REG_TEST1 0x07
+#define REG_TEST2 0x08
+#define REG_BOOTCONFIG 0x09
+#define REG_STATUSRSSI 0x0A
+#define REG_READCHAN 0x0B
+#define REG_RDSA 0x0C
+#define REG_RDSB 0x0D
+#define REG_RDSC 0x0E
+#define REG_RDSD 0x0F
 
 #define MASK_CHANNEL 0x03FF
 #define MASK_DE_EMPHASIS 0x0800
@@ -46,6 +70,11 @@
 #define VAL_POWER_ON 0x4001
 #define VAL_POWER_OFF 0x0041
 
+struct Fm_tuner {
+  int bus;
+  uint16_t regs[FM_TUNER_REGISTERS_N];
+};
+
 static inline void __set_volume(Fm_tuner *fm_tuner, int volume) {
   /* Suppose que volume est dans l'intervalle
      [ FM_TUNER_VOLUME_MIN, FM_TUNER_VOLUME_MAX ]. */
@@ -56,7 +85,7 @@ static inline void __set_volume(Fm_tuner *fm_tuner, int volume) {
 }
 
 /* Documentation: "doc/AN230.pdf", page 12. */
-int fm_tuner_init (Fm_tuner *fm_tuner, Fm_tuner_conf *conf) {
+static int __fm_tuner_init (Fm_tuner *fm_tuner, Fm_tuner_conf *conf) {
   int pins[] = { conf->pin_rst, conf->pin_sdio };
   int i;
 
@@ -124,7 +153,7 @@ int fm_tuner_init (Fm_tuner *fm_tuner, Fm_tuner_conf *conf) {
 }
 
 /* Documentation: "doc/AN230.pdf", page 13. */
-int fm_tuner_close (Fm_tuner *fm_tuner) {
+int __fm_tuner_close (Fm_tuner *fm_tuner) {
   if (fm_tuner_read_registers(fm_tuner) == -1)
     return -1;
 
@@ -137,6 +166,24 @@ int fm_tuner_close (Fm_tuner *fm_tuner) {
     return error("Unable to close the bus.");
 
   return 0;
+}
+
+Fm_tuner *fm_tuner_new (Fm_tuner_conf *conf) {
+  Fm_tuner *fm_tuner = pnew(Fm_tuner);
+
+  if (__fm_tuner_init(fm_tuner, conf) == -1)
+    fatal_error("Unable to create a fm tuner.");
+
+  return fm_tuner;
+}
+
+void fm_tuner_free (Fm_tuner *fm_tuner) {
+  if (fm_tuner != NULL) {
+    __fm_tuner_close(fm_tuner);
+    free(fm_tuner);
+  }
+
+  return;
 }
 
 /* Documentation: "doc/Si4702-03-C19-1.pdf", page 19. */
