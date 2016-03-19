@@ -68,6 +68,8 @@ class ServiceClient {
     const { _socket } = this
     _socket.connect({ host, port })
     _socket.on('data', ::this._onData)
+
+    this._end = eventToPromise(_socket, 'end')
     await eventToPromise(_socket, 'connect')
   }
 
@@ -93,6 +95,10 @@ class ServiceClient {
 
     return this._send(buf)
   }
+
+  async waitEnd () {
+    return this._end
+  }
 }
 
 async function run () {
@@ -103,6 +109,9 @@ async function run () {
     client.setVolume(DEFAULT_VOLUME),
     client.setChannel(DEFAULT_CHANNEL)
   ])
+  await client.waitEnd().then(() => {
+    throw new Error('Disconnected!')
+  })
 }
 
 // ===================================================================
