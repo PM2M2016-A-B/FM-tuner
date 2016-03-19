@@ -22,6 +22,10 @@
 #define FM_TUNER_VOLUME_MIN 0
 #define FM_TUNER_VOLUME_MAX 15
 
+/* Directions possibles du seek. */
+#define FM_TUNER_SEEK_PREV 0
+#define FM_TUNER_SEEK_NEXT 1
+
 typedef struct Fm_tuner Fm_tuner;
 
 /* Configuration du tuner. */
@@ -72,6 +76,12 @@ int fm_tuner_set_channel (Fm_tuner *fm_tuner, int channel);
 /* Donne le channel actuelle du tuner.
    Retourne -1 en cas d'échec, sinon le channel. */
 int fm_tuner_get_channel (Fm_tuner *fm_tuner);
+
+/* Change de station (gauche/droite).
+   success est utilisé pour indiqué si le changement
+   de station a pu se faire. Retourne -1 en cas d'échec,
+   sinon le channel. */
+int fm_tuner_seek (Fm_tuner *fm_tuner, int direction, int *success);
 
 /* Stocke dans blocks des données rds si elles existent.
    Dans le cas où elles existent, data_exists vaut 1 sinon 0.

@@ -59,6 +59,10 @@
 #define MASK_CHANNEL 0x03FF
 #define MASK_DE_EMPHASIS 0x0800
 #define MASK_ENABLE_RDS 0x1000
+#define MASK_SEEK 0x0100
+#define MASK_SEEKUP 0x0200
+#define MASK_SFBL 0x2000
+#define MASK_SKMODE 0x0400
 #define MASK_STC 0x4000
 #define MASK_TEST_RDS 0x8000
 #define MASK_TUNE 0x8000
@@ -92,6 +96,19 @@ static inline int __get_channel (Fm_tuner *fm_tuner) {
   #endif
 
   return channel + CHANNEL_OFFSET;
+}
+
+static int __wait_stc (Fm_tuner *fm_tuner) {
+  for (;;) {
+    if (fm_tuner_read_registers(fm_tuner) == -1)
+      return -1;
+    if (!(fm_tuner->regs[REG_STATUSRSSI] & MASK_STC))
+      break;
+
+    sleep_m(1);
+  }
+
+  return 0;
 }
 
 /* Documentation: "doc/AN230.pdf", page 12. */
@@ -163,7 +180,7 @@ static int __fm_tuner_init (Fm_tuner *fm_tuner, Fm_tuner_conf *conf) {
 }
 
 /* Documentation: "doc/AN230.pdf", page 13. */
-int __fm_tuner_close (Fm_tuner *fm_tuner) {
+static int __fm_tuner_close (Fm_tuner *fm_tuner) {
   if (fm_tuner_read_registers(fm_tuner) == -1)
     return -1;
 
@@ -203,9 +220,8 @@ int fm_tuner_write_registers (Fm_tuner *fm_tuner) {
   int i, j;
 
   /* Ecriture des registres 0x02 à 0x07. */
-  for (i = 0x02, j = 0; i <= 0x07; i++, j++) {
+  for (i = 0x02, j = 0; i <= 0x07; i++, j++)
     regs[j] = htons(fm_tuner->regs[i]);
-  }
 
   if (i2c_write(fm_tuner->bus, (void *)regs, size) != size) {
     error("Unable to write registers.");
@@ -306,29 +322,15 @@ int fm_tuner_set_channel (Fm_tuner *fm_tuner, int channel) {
     return -1;
 
   /* On attend que le tune soit pris en compte. */
-  for (;;) {
-    if (fm_tuner_read_registers(fm_tuner) == -1)
-      return -1;
-    if (fm_tuner->regs[REG_STATUSRSSI] & MASK_STC)
-      break;
-
-    sleep_m(10);
-  }
+  if (__wait_stc(fm_tuner) == -1)
+    return -1;
 
   /* Remise à 0 du bit TUNE. */
   fm_tuner->regs[REG_CHANNEL] &= ~MASK_TUNE;
 
-  if (fm_tuner_write_registers(fm_tuner) == -1)
+  if (fm_tuner_write_registers(fm_tuner) == -1 ||
+      __wait_stc(fm_tuner) == -1)
     return -1;
-
-  for (;;) {
-    if (fm_tuner_read_registers(fm_tuner) == -1)
-      return -1;
-    if (!(fm_tuner->regs[REG_STATUSRSSI] & MASK_STC))
-      break;
-
-    sleep_m(10);
-  }
 
   return __get_channel(fm_tuner);
 }
@@ -341,6 +343,42 @@ int fm_tuner_get_channel (Fm_tuner *fm_tuner) {
   return __get_channel(fm_tuner);
 }
 
+/* Documentation: "doc/AN230.pdf", page 20. */
+int fm_tuner_seek (Fm_tuner *fm_tuner, int direction, int *success) {
+  *success = 0;
+
+  if (fm_tuner_read_registers(fm_tuner) == -1)
+    return -1;
+
+  /* Ne pas sortir des limites de la bande. */
+  fm_tuner->regs[REG_POWERCFG] |= MASK_SKMODE;
+
+  /* Choix de la direction, NEXT ou PREV. */
+  if (direction)
+    fm_tuner->regs[REG_POWERCFG] |= MASK_SEEKUP;
+  else
+    fm_tuner->regs[REG_POWERCFG] &= ~MASK_SEEKUP;
+
+  /* Activation du seek. */
+  fm_tuner->regs[REG_POWERCFG] |= MASK_SEEK;
+
+  if (fm_tuner_write_registers(fm_tuner) == -1 ||
+      __wait_stc(fm_tuner) == -1)
+    return -1;
+
+  /* Indique si oui ou non le changement de station a pu se faire. */
+  *success = fm_tuner->regs[REG_STATUSRSSI] & MASK_SFBL;
+
+  /* Reset du seek. */
+  fm_tuner->regs[REG_POWERCFG] &= ~MASK_SEEK;
+
+  if (__wait_stc(fm_tuner) == -1)
+    return -1;
+
+  return __get_channel(fm_tuner);
+}
+
+/* Documentation: "doc/AN230.pdf", page 12. */
 int fm_tuner_read_rds (Fm_tuner *fm_tuner, uint16_t blocks[4], int *data_exists) {
   int i;
 

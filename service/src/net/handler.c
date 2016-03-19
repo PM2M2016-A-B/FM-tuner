@@ -177,9 +177,11 @@ int handler_event (Socket sock, int id, char *buf, int len, void *user_value) {
 
     printf(" (length=%d)\n", *buf);
 
+    /* Parse un message. */
     if (__parse_event(buf + 1, *buf - 1, value) == -1) {
       printf("[server]Malformed message of client %d.\n", id);
 
+      /* Indique une erreur et deconnecte le client. */
       tcp_send(sock, (void *)MALFORMED_MESSAGE, MALFORMED_MESSAGE_SIZE);
       shutdown(sock, SHUT_RDWR);
 
@@ -200,6 +202,7 @@ void handler_join (Socket sock, int id, void *user_value) {
 
   (void)id;
 
+  /* Envoie les valeurs actuelles du volume/channel. */
   p += __add_volume_to_buf(p, fm_tuner_get_volume(value->fm_tuner));
   p += __add_channel_to_buf(p, fm_tuner_get_channel(value->fm_tuner));
   *buf = p - buf;
