@@ -37,6 +37,7 @@ typedef struct Server_conf {
   void *user_value;
 } Server_conf;
 
+/* Execute un serveur qui peut être stoppé par le signal SIGINT. */
 void server_run (Server_conf *conf, int timeout);
 
 #endif /* _SERVER_H_ INCLUDED */
