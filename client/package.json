@@ -27,6 +27,7 @@
   ],
   "dependencies": {
     "babel-runtime": "^5.8.34",
+    "event-to-promise": "^0.7.0",
     "moment": "^2.10.6"
   },
   "devDependencies": {

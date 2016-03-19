@@ -200,8 +200,8 @@ void handler_join (Socket sock, int id, void *user_value) {
 
   (void)id;
 
-  p += __add_volume_to_buf(buf, fm_tuner_get_volume(value->fm_tuner));
-  p += __add_channel_to_buf(buf, fm_tuner_get_channel(value->fm_tuner));
+  p += __add_volume_to_buf(p, fm_tuner_get_volume(value->fm_tuner));
+  p += __add_channel_to_buf(p, fm_tuner_get_channel(value->fm_tuner));
   *buf = p - buf;
 
   if (*buf - 1 > 0)
