@@ -96,10 +96,6 @@ int main (void) {
   __disable_signals();
   __disable_leds();
 
-  // TMP
-  debug("volume init %d\n", fm_tuner_set_volume(fm_tuner, 3));
-  debug("channel init %d\n", fm_tuner_set_channel(fm_tuner, 931));
-
   server_run(&conf, 500);
 
   rds_free(handler_value.rds);
