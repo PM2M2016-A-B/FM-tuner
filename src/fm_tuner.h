@@ -58,19 +58,19 @@ void fm_tuner_print_registers (Fm_tuner *fm_tuner);
 
 /* Règle le volume d'un tuner dans l'intervalle
    [ FM_TUNER_VOLUME_MIN, FM_TUNER_VOLUME_MAX ].
-   Retourne -1 en cas d'échec, sinon 0. */
+   Retourne -1 en cas d'échec, sinon le volume. */
 int fm_tuner_set_volume (Fm_tuner *fm_tuner, int volume);
 
 /* Donne la valeur actuelle du volume du tuner.
    Retourne -1 en cas d'échec, sinon le volume. */
 int fm_tuner_get_volume (Fm_tuner *fm_tuner);
 
-/* Règle la channel du tuner.
-   Retourne -1 en cas d'échec, sinon 0. */
+/* Règle le channel du tuner.
+   Retourne -1 en cas d'échec, sinon le channel. */
 int fm_tuner_set_channel (Fm_tuner *fm_tuner, int channel);
 
-/* Donne la channel actuelle du tuner.
-   Retourne -1 en cas d'échec, sinon la channel. */
+/* Donne le channel actuelle du tuner.
+   Retourne -1 en cas d'échec, sinon le channel. */
 int fm_tuner_get_channel (Fm_tuner *fm_tuner);
 
 /* Stocke dans blocks des données rds si elles existent.

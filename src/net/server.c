@@ -21,7 +21,7 @@
 #include "../utils/error.h"
 #include "server.h"
 
-#define CLIENT_BUFFER_SIZE 512
+#define CLIENT_BUFFER_SIZE 128
 
 typedef struct Client {
   char buf[CLIENT_BUFFER_SIZE];
@@ -61,7 +61,7 @@ static void *__thread_exit (void *arg) {
   /* Attend le signal de fermeture. */
   sigsuspend(&set);
 
-  printf("Stopping server...\n");
+  printf("[server]Stopping server...\n");
 
   pthread_mutex_lock(&server->lock_run);
   server->run = 0;
@@ -125,13 +125,13 @@ static void __handle_server (Server *server, Server_conf *conf) {
 
   /* On déconnecte le nouveau client s'il y a trop de monde. */
   if ((id = socket_set_add(server->ss, sock)) == -1) {
-    debug("[server]No enough place for a new client.\n");
+    printf("[server]No enough place for a new client.\n");
     tcp_close(sock);
 
     return;
   }
 
-  debug("[server]New client %d!\n", id);
+  printf("[server]New client %d!\n", id);
   memset(server->clients[id - 1], 0, sizeof(Client));
   conf->handlers.join(sock, id, conf->user_value);
 
@@ -146,17 +146,17 @@ static void __handle_client(Server *server, Server_conf *conf, Socket sock, int 
   /* Normalement si le protocole de gestion des clients est bien fait,
      ce cas ne devrait jamais arriver. */
   if (client->pos == CLIENT_BUFFER_SIZE)
-    debug("[server]Warning: buffer is full for client %d!\n", id);
+    printf("[server]Warning: buffer is full for client %d!\n", id);
 
   /* Déconnexion d'un client. */
   if ((len = tcp_recv(sock, client->buf + client->pos, CLIENT_BUFFER_SIZE - client->pos)) <= 0) {
     socket_set_remove(server->ss, sock);
-    debug("[server]Bye client %d!\n", id);
+    printf("[server]Bye client %d!\n", id);
   }
 
   /* Réception d'un message. */
   else {
-    debug("[server]New message for client %d!\n", id);
+    printf("[server]New message for client %d!\n", id);
     client->pos += len;
 
     /* Déplacement du pointeur de lecture. */

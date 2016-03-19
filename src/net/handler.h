@@ -23,9 +23,13 @@
 typedef struct Handler_value {
   Fm_tuner *fm_tuner;
   Rds *rds;
+
+  char to_set;
+  int new_channel;
+  int new_volume;
 } Handler_value;
 
-int handler_event (Socket sock, int id, char *buffer, int len, void *user_value);
+int handler_event (Socket sock, int id, char *buf, int len, void *user_value);
 void *handler_join (Socket sock, int id, void *user_value);
 void handler_quit (Socket sock, int id, void *user_value);
 void handler_loop (Socket_set *ss, void *user_value);

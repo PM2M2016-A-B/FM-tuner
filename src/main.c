@@ -75,7 +75,8 @@ static void __delete_tuner (void) {
 int main (void) {
   Handler_value handler_value = {
     .fm_tuner = __create_tuner(),
-    .rds = rds_new()
+    .rds = rds_new(),
+    .to_set = 0
   };
   Server_conf conf = {
     .port = SERVER_DEFAULT_PORT,
@@ -96,8 +97,8 @@ int main (void) {
   __disable_leds();
 
   // TMP
-  printf("volume init %d\n", fm_tuner_set_volume(fm_tuner, 5));
-  printf("channel init %d\n", fm_tuner_set_channel(fm_tuner, 933));
+  debug("volume init %d\n", fm_tuner_set_volume(fm_tuner, 5));
+  debug("channel init %d\n", fm_tuner_set_channel(fm_tuner, 931));
 
   server_run(&conf, 500);
 

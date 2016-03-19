@@ -38,14 +38,14 @@ typedef fd_set Sockets_states;
 /* ---------------------------------------------------------------------- */
 
 /* Sérialise des données. */
-unsigned char *serialize_uint8 (unsigned char *buf, uint8_t value);
-unsigned char *serialize_uint16 (unsigned char *buf, uint16_t value);
-unsigned char *serialize_uint32 (unsigned char *buf, uint32_t value);
+char *serialize_uint8 (char *buf, uint8_t value);
+char *serialize_uint16 (char *buf, uint16_t value);
+char *serialize_uint32 (char *buf, uint32_t value);
 
 /* Désérialise des données. */
-unsigned char *deserialize_uint8 (unsigned char *buf, uint8_t *value);
-unsigned char *deserialize_uint16 (unsigned char *buf, uint16_t *value);
-unsigned char *deserialize_uint32 (unsigned char *buf, uint32_t *value);
+char *deserialize_uint8 (char *buf, uint8_t *value);
+char *deserialize_uint16 (char *buf, uint16_t *value);
+char *deserialize_uint32 (char *buf, uint32_t *value);
 
 /* ---------------------------------------------------------------------- */
 

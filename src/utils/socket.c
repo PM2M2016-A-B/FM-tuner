@@ -39,19 +39,19 @@ struct Socket_set {
 
 /* --------------------------------------------------------------------- */
 
-unsigned char *serialize_uint8 (unsigned char *buf, uint8_t value) {
+char *serialize_uint8 (char *buf, uint8_t value) {
   buf[0] = value;
   return buf + 1;
 }
 
-unsigned char *serialize_uint16 (unsigned char *buf, uint16_t value) {
+char *serialize_uint16 (char *buf, uint16_t value) {
   buf[0] = (value >> 8) & 0xFF;
   buf[1] = value & 0xFF;
 
   return buf + 2;
 }
 
-unsigned char *serialize_uint32 (unsigned char *buf, uint32_t value) {
+char *serialize_uint32 (char *buf, uint32_t value) {
   buf[0] = (value >> 24) & 0xFF;
   buf[1] = (value >> 16) & 0xFF;
   buf[2] = (value >> 8) & 0xFF;
@@ -60,17 +60,17 @@ unsigned char *serialize_uint32 (unsigned char *buf, uint32_t value) {
   return buf + 4;
 }
 
-unsigned char *deserialize_uint8 (unsigned char *buf, uint8_t *value) {
+char *deserialize_uint8 (char *buf, uint8_t *value) {
   *value = buf[0];
   return buf + 1;
 }
 
-unsigned char *deserialize_uint16 (unsigned char *buf, uint16_t *value) {
+char *deserialize_uint16 (char *buf, uint16_t *value) {
   *value = (buf[0] << 8 | buf[1]);
   return buf + 2;
 }
 
-unsigned char *deserialize_uint32 (unsigned char *buf, uint32_t *value) {
+char *deserialize_uint32 (char *buf, uint32_t *value) {
   *value = (buf[0] << 24 | buf[1] << 16 | buf[2] << 8 | buf[3]);
   return buf + 4;
 }
@@ -254,7 +254,7 @@ Socket tcp_get (IP *ip) {
 
     /* Connexion... */
     if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-      tcp_close(sock);
+      close(sock);
       return -1;
     }
   }
@@ -269,7 +269,7 @@ Socket tcp_get (IP *ip) {
     /* Affectation de l'adresse. */
     if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0 ||
        listen(sock, 5) < 0) {
-      tcp_close(sock);
+      close(sock);
       return -1;
     }
 

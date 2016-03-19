@@ -153,19 +153,13 @@ static void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
 
 void rds_decode (Rds *rds, uint16_t blocks[]) {
   int id, version;
-
-  #ifdef DEBUG
-    char version_c;
-  #endif
+  char version_c;
 
   __get_group_type(blocks, &id, &version);
   rds->bit_fields &= ~MASK_TP;
   rds->bit_fields |= (!!(blocks[RDSB] & 0x0800)) << BIT_TP;
 
-  #ifdef DEBUG
-    version_c = !version ? 'A' : 'B';
-  #endif
-
+  version_c = !version ? 'A' : 'B';
   debug("Group type: %d%c\n", id, version_c);
 
   switch (id) {
@@ -176,7 +170,7 @@ void rds_decode (Rds *rds, uint16_t blocks[]) {
       __decode_radio_text(rds, blocks, version);
       break;
     default:
-      debug("Unsupported group type: %d%c.\n", id, version_c);
+      printf("[rds]Unsupported group type: %d%c.\n", id, version_c);
   }
 
   return;

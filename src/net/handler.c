@@ -13,6 +13,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <stdio.h>
 #include <string.h>
 
 #include "../utils/error.h"
@@ -20,36 +21,176 @@
 
 #include "handler.h"
 
+/* Temps minimum à attendre avant un nouveau message RDS. */
 #define SLEEP_DELAY 40
 
+/* Taille totale en bytes des blocks RDS. */
 #define RDS_BLOCKS_SIZE (4 * sizeof(uint16_t))
 
-static int __set_volume (Fm_tuner *fm_tuner, int value) {
-  debug("Set volume.\n");
-  return fm_tuner_set_volume(fm_tuner, value);
+/* Types d'events clients/serveur. */
+#define EVENT_MALFORMED_MESSAGE 0
+#define EVENT_VOLUME 1
+#define EVENT_CHANNEL 2
+
+/* Message d'erreur renvoyé si un client a émis une mauvaise requête. */
+static const char MALFORMED_MESSAGE[] = { 1, EVENT_MALFORMED_MESSAGE };
+#define MALFORMED_MESSAGE_SIZE (sizeof(MALFORMED_MESSAGE))
+
+/* Masks utilisés sur Handler_value.to_set. */
+#define MASK_VOLUME 0x01
+#define MASK_CHANNEL 0x02
+
+#define BROADCAST_BUFFER_SIZE 128
+
+/* --------------------------------------------------------------------- */
+
+static inline int __set_volume (Fm_tuner *fm_tuner, char *buf, int volume) {
+  int new_volume = fm_tuner_set_volume(fm_tuner, volume);
+
+  if (new_volume == -1) {
+    error("[server]Set volume failed.");
+    return 0;
+  }
+
+  printf("[server]Set volume: %d.\n", new_volume);
+
+  *buf++ = EVENT_VOLUME;
+  serialize_uint8(buf, new_volume & 0x000000FF);
+
+  return 2;
 }
 
-static int __set_channel (Fm_tuner *fm_tuner, int value) {
-  debug("Set channel: %d\n", value);
-  return fm_tuner_set_channel(fm_tuner, value);
+static inline int __set_channel (Fm_tuner *fm_tuner, char *buf, int channel) {
+  int new_channel = fm_tuner_set_channel(fm_tuner, channel);
+
+  if (new_channel == -1) {
+    error("[server]Set channel failed.");
+    return 0;
+  }
+
+  printf("[server]Set channel: %d.\n", new_channel);
+
+  *buf++ = EVENT_CHANNEL;
+  serialize_uint16(buf, new_channel & 0x0000FFFF);
+
+  return 3;
 }
 
 /* --------------------------------------------------------------------- */
 
-int handler_event (Socket sock, int id, char *buffer, int len, void *user_value) {
-  (void)sock;
-  (void)id;
-  (void)buffer;
-  (void)len;
-  (void)user_value;
+static int __parse_event (char *buf, int len, Handler_value *value) {
+  char to_set = 0;
+  uint8_t new_volume;
+  uint16_t new_channel;
+
+  if (len < 0)
+    return -1;
+
+  /* Tant que le message n'est pas traité en entier... */
+  while (len > 0)
+    switch (*buf++) {
+      case EVENT_VOLUME:
+        if (len < 2)
+          return -1;
+
+        to_set |= MASK_VOLUME;
+        buf = deserialize_uint8(buf, &new_volume);
+        len -= 2;
+        break;
+
+      case EVENT_CHANNEL:
+        if (len < 3)
+          return -1;
+
+        to_set |= MASK_CHANNEL;
+        buf = deserialize_uint16(buf, &new_channel);
+        len -= 3;
+        break;
+
+      default:
+        return -1;
+    }
+
+  /* Mise en cache des registres à mettre à jour côté tuner. */
+  if (to_set & MASK_VOLUME)
+    value->new_volume = new_volume;
+  if (to_set & MASK_CHANNEL)
+    value->new_channel = new_channel;
+
+  value->to_set |= to_set;
 
   return 0;
+}
+
+/* --------------------------------------------------------------------- */
+
+static void __broadcast (Socket_set *ss, Handler_value *value) {
+  static char buf[BROADCAST_BUFFER_SIZE];
+  char *p = buf + 1;
+
+  Socket sock;
+  int i = socket_set_get_max_size(ss);
+
+  /* Mise à jour des registres. */
+  if (value->to_set & MASK_VOLUME)
+    p += __set_volume(value->fm_tuner, p, value->new_volume);
+  if (value->to_set & MASK_CHANNEL)
+    p += __set_channel(value->fm_tuner, p, value->new_channel);
+
+  /* TODO: RDS */
+
+  *buf = p - buf;
+
+  /* Broadcast. */
+  if (*buf - 1 > 0)
+    for (i--; i > 0; i--)
+      if ((sock = socket_set_get(ss, i)) != -1)
+        tcp_send(sock, buf, *buf);
+
+  /* Reset. */
+  value->to_set = 0;
+
+  return;
+}
+
+/* --------------------------------------------------------------------- */
+
+int handler_event (Socket sock, int id, char *buf, int len, void *user_value) {
+  Handler_value *value = user_value;
+  int msg_len = len;
+  char *p = buf;
+
+  /* Parse un ensemble de messages clients. */
+  while (msg_len >= *buf && *buf > 0) {
+    printf("[server]Received message of client %d: ", id);
+
+    for (; p - buf < len; )
+      printf("%02x", *p++);
+
+    printf("\n");
+
+    if (__parse_event(buf + 1, *buf, value) == -1) {
+      printf("[server]Malformed message of client %d.\n", id);
+
+      tcp_send(sock, (void *)MALFORMED_MESSAGE, MALFORMED_MESSAGE_SIZE);
+      shutdown(sock, SHUT_RDWR);
+
+      return len;
+    }
+
+    msg_len -= *buf;
+    buf += *buf;
+  }
+
+  return len - msg_len;
 }
 
 void *handler_join (Socket sock, int id, void *user_value) {
   (void)sock;
   (void)id;
   (void)user_value;
+
+  /* TODO: Envoyer le son/channel. */
 
   return 0;
 }
@@ -72,24 +213,24 @@ void handler_loop (Socket_set *ss, void *user_value) {
   int data_exists;
   long sleep_time;
 
-  (void)ss;
-
+  /* Sleep. */
   time_get_cur(&t_cur);
+
   sleep_time = SLEEP_DELAY - time_diff(&t_prev, &t_cur);
-
-  // TMP
-  // debug("Sleep %ldms.\n", sleep_time);
-
   sleep_m(sleep_time);
+
   time_get_cur(&t_prev);
 
+  /* Parsing du RDS. */
   fm_tuner_read_rds(value->fm_tuner, blocks, &data_exists);
 
-  /* Parsing du RDS si possible. */
-  if (data_exists && memcmp(blocks, prev_blocks, RDS_BLOCKS_SIZE))
+  if (data_exists && memcmp(blocks, prev_blocks, RDS_BLOCKS_SIZE)) {
     rds_decode(value->rds, blocks);
+    memcpy(prev_blocks, blocks, RDS_BLOCKS_SIZE);
+  }
 
-  memcpy(prev_blocks, blocks, RDS_BLOCKS_SIZE);
+  /* Brooooooooadcast. */
+  __broadcast (ss, value);
 
   return;
 }

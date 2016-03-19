@@ -84,6 +84,16 @@ static inline void __set_volume(Fm_tuner *fm_tuner, int volume) {
   return;
 }
 
+static inline int __get_channel (Fm_tuner *fm_tuner) {
+  int channel = fm_tuner->regs[REG_READCHAN] & MASK_CHANNEL;
+
+  #ifdef AMERICAN_VERSION
+    channel *= 2;
+  #endif
+
+  return channel + CHANNEL_OFFSET;
+}
+
 /* Documentation: "doc/AN230.pdf", page 12. */
 static int __fm_tuner_init (Fm_tuner *fm_tuner, Fm_tuner_conf *conf) {
   int pins[] = { conf->pin_rst, conf->pin_sdio };
@@ -258,7 +268,10 @@ int fm_tuner_set_volume (Fm_tuner *fm_tuner, int volume) {
   /* Mise à jour du volume.*/
   __set_volume(fm_tuner, volume);
 
-  return fm_tuner_write_registers(fm_tuner);
+  if (fm_tuner_write_registers(fm_tuner) == -1)
+    return -1;
+
+  return volume;
 }
 
 /* Documentation: "doc/Si4702-03-C19-1.pdf", page 28. */
@@ -317,23 +330,15 @@ int fm_tuner_set_channel (Fm_tuner *fm_tuner, int channel) {
     sleep_m(10);
   }
 
-  return 0;
+  return __get_channel(fm_tuner);
 }
 
 /* Documentation: "doc/AN230.pdf", page 22. */
 int fm_tuner_get_channel (Fm_tuner *fm_tuner) {
-  int channel;
-
   if (fm_tuner_read_registers(fm_tuner) == -1)
     return -1;
 
-  channel = fm_tuner->regs[REG_READCHAN] & MASK_CHANNEL;
-
-  #ifdef AMERICAN_VERSION
-    channel *= 2;
-  #endif
-
-  return channel + CHANNEL_OFFSET;
+  return __get_channel(fm_tuner);
 }
 
 int fm_tuner_read_rds (Fm_tuner *fm_tuner, uint16_t blocks[4], int *data_exists) {
