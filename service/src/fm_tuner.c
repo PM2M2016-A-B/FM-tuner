@@ -302,20 +302,20 @@ int fm_tuner_get_volume (Fm_tuner *fm_tuner) {
 
 /* Documentation: "doc/AN230.pdf", page 22. */
 int fm_tuner_set_channel (Fm_tuner *fm_tuner, int channel) {
-  channel = channel - CHANNEL_OFFSET;
+  int rds_channel = channel - CHANNEL_OFFSET;
 
   #ifdef AMERICAN_VERSION
-    channel /= 2;
+    rds_channel /= 2;
   #endif
 
-  channel &= MASK_CHANNEL;
+  rds_channel &= MASK_CHANNEL;
 
   if (fm_tuner_read_registers(fm_tuner) == -1)
     return -1;
 
   /* Ecriture du channel choisi. */
   fm_tuner->regs[REG_CHANNEL] &= ~MASK_CHANNEL;
-  fm_tuner->regs[REG_CHANNEL] |= channel;
+  fm_tuner->regs[REG_CHANNEL] |= rds_channel;
 
   /* Mise à 1 du bit TUNE. */
   fm_tuner->regs[REG_CHANNEL] |= MASK_TUNE;
@@ -331,10 +331,10 @@ int fm_tuner_set_channel (Fm_tuner *fm_tuner, int channel) {
   fm_tuner->regs[REG_CHANNEL] &= ~MASK_TUNE;
 
   if (fm_tuner_write_registers(fm_tuner) == -1 ||
-      __wait_stc(fm_tuner) == -1)
+    __wait_stc(fm_tuner) == -1)
     return -1;
 
-  return __get_channel(fm_tuner);
+  return channel;
 }
 
 /* Documentation: "doc/AN230.pdf", page 22. */
@@ -374,7 +374,8 @@ int fm_tuner_seek (Fm_tuner *fm_tuner, int direction, int *success) {
   /* Reset du seek. */
   fm_tuner->regs[REG_POWERCFG] &= ~MASK_SEEK;
 
-  if (__wait_stc(fm_tuner) == -1)
+  if (fm_tuner_write_registers(fm_tuner) == -1 ||
+      __wait_stc(fm_tuner) == -1)
     return -1;
 
   return __get_channel(fm_tuner);
