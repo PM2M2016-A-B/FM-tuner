@@ -88,4 +88,8 @@ int fm_tuner_seek (Fm_tuner *fm_tuner, int direction, int *success);
    Retourne -1 en cas d'échec, sinon 0. */
 int fm_tuner_read_rds (Fm_tuner *fm_tuner, uint16_t blocks[], int *data_exists);
 
+/* Retourne le RSSI actuel ou -1 en cas d'erreur.
+   Max: 75dBuV. */
+int fm_tuner_get_rssi (Fm_tuner *fm_tuner);
+
 #endif /* _FM_TUNER_ INCLUDED */

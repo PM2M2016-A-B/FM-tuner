@@ -59,10 +59,12 @@
 #define MASK_CHANNEL 0x03FF
 #define MASK_DE_EMPHASIS 0x0800
 #define MASK_ENABLE_RDS 0x1000
+#define MASK_RSSI 0x00FF
 #define MASK_SEEK 0x0100
 #define MASK_SEEKUP 0x0200
 #define MASK_SFBL 0x2000
 #define MASK_SKMODE 0x0400
+#define MASK_SPACE_EUROPE 0x0010
 #define MASK_STC 0x4000
 #define MASK_TEST_RDS 0x8000
 #define MASK_TUNE 0x8000
@@ -159,7 +161,7 @@ static int __fm_tuner_init (Fm_tuner *fm_tuner, Fm_tuner_conf *conf) {
 
   #ifdef EUROPE_VERSION
     fm_tuner->regs[REG_SYSCONFIG1] |= MASK_DE_EMPHASIS;
-    fm_tuner->regs[REG_SYSCONFIG2] |= 0x0010;
+    fm_tuner->regs[REG_SYSCONFIG2] |= MASK_SPACE_EUROPE;
   #endif
 
   /* Activation RDS. */
@@ -395,4 +397,11 @@ int fm_tuner_read_rds (Fm_tuner *fm_tuner, uint16_t blocks[4], int *data_exists)
     *data_exists = 0;
 
   return 0;
+}
+
+int fm_tuner_get_rssi (Fm_tuner *fm_tuner) {
+  if (fm_tuner_read_registers(fm_tuner) == -1)
+    return -1;
+
+  return fm_tuner->regs[REG_STATUSRSSI] & MASK_RSSI;
 }
