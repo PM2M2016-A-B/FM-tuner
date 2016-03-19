@@ -19,7 +19,7 @@
 #include "../utils/socket.h"
 
 typedef int (*Fun_client_event)(Socket sock, int id, char *buffer, int len, void *user_value);
-typedef void *(*Fun_client_join)(Socket sock, int id, void *user_value);
+typedef void (*Fun_client_join)(Socket sock, int id, void *user_value);
 typedef void (*Fun_client_quit)(Socket sock, int id, void *user_value);
 typedef void (*Fun_server_loop)(Socket_set *ss, void *user_value);
 

@@ -91,7 +91,7 @@ static int __parse_event (char *buf, int len, Handler_value *value) {
   uint8_t new_volume;
   uint16_t new_channel;
 
-  if (len < 0)
+  if (len <= 0)
     return -1;
 
   /* Tant que le message n'est pas traité en entier... */
@@ -169,15 +169,15 @@ int handler_event (Socket sock, int id, char *buf, int len, void *user_value) {
   char *p = buf;
 
   /* Parse un ensemble de messages clients. */
-  while (msg_len >= *buf && *buf > 0) {
+  while (msg_len > 0 && msg_len >= *buf) {
     printf("[server]Received message of client %d: ", id);
 
-    for (; p - buf < len; )
+    for (; p - buf < *buf; )
       printf("%02x", *p++);
 
-    printf("\n");
+    printf(" (length=%d)\n", *buf);
 
-    if (__parse_event(buf + 1, *buf, value) == -1) {
+    if (__parse_event(buf + 1, *buf - 1, value) == -1) {
       printf("[server]Malformed message of client %d.\n", id);
 
       tcp_send(sock, (void *)MALFORMED_MESSAGE, MALFORMED_MESSAGE_SIZE);
@@ -193,7 +193,7 @@ int handler_event (Socket sock, int id, char *buf, int len, void *user_value) {
   return len - msg_len;
 }
 
-void *handler_join (Socket sock, int id, void *user_value) {
+void handler_join (Socket sock, int id, void *user_value) {
   Handler_value *value = user_value;
   static char buf[SEND_BUFFER_SIZE];
   char *p = buf + 1;
@@ -207,7 +207,7 @@ void *handler_join (Socket sock, int id, void *user_value) {
   if (*buf - 1 > 0)
     tcp_send(sock, buf, *buf);
 
-  return 0;
+  return;
 }
 
 void handler_quit (Socket sock, int id, void *user_value) {

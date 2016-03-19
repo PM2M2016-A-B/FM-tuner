@@ -30,7 +30,7 @@ typedef struct Handler_value {
 } Handler_value;
 
 int handler_event (Socket sock, int id, char *buf, int len, void *user_value);
-void *handler_join (Socket sock, int id, void *user_value);
+void handler_join (Socket sock, int id, void *user_value);
 void handler_quit (Socket sock, int id, void *user_value);
 void handler_loop (Socket_set *ss, void *user_value);
 
