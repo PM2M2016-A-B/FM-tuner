@@ -32,6 +32,10 @@
 #define EVENT_VOLUME 1
 #define EVENT_CHANNEL 2
 
+/* Taille des events. size(Id_event) + size(Data_event) en bytes. */
+#define EVENT_VOLUME_SIZE 2
+#define EVENT_CHANNEL_SIZE 3
+
 /* Message d'erreur renvoyé si un client a émis une mauvaise requête. */
 static const char MALFORMED_MESSAGE[] = { 1, EVENT_MALFORMED_MESSAGE };
 #define MALFORMED_MESSAGE_SIZE (sizeof(MALFORMED_MESSAGE))
@@ -40,9 +44,15 @@ static const char MALFORMED_MESSAGE[] = { 1, EVENT_MALFORMED_MESSAGE };
 #define MASK_VOLUME 0x01
 #define MASK_CHANNEL 0x02
 
-#define BROADCAST_BUFFER_SIZE 128
+#define SEND_BUFFER_SIZE 128
 
 /* --------------------------------------------------------------------- */
+
+static inline int __add_volume_to_buf(char *buf, int volume) {
+  *buf++ = EVENT_VOLUME;
+  serialize_uint8(buf, volume & 0x000000FF);
+  return EVENT_VOLUME_SIZE;
+}
 
 static inline int __set_volume (Fm_tuner *fm_tuner, char *buf, int volume) {
   int new_volume = fm_tuner_set_volume(fm_tuner, volume);
@@ -53,11 +63,13 @@ static inline int __set_volume (Fm_tuner *fm_tuner, char *buf, int volume) {
   }
 
   printf("[server]Set volume: %d.\n", new_volume);
+  return __add_volume_to_buf(buf, new_volume);
+}
 
-  *buf++ = EVENT_VOLUME;
-  serialize_uint8(buf, new_volume & 0x000000FF);
-
-  return 2;
+static inline int __add_channel_to_buf(char *buf, int channel) {
+  *buf++ = EVENT_CHANNEL;
+  serialize_uint16(buf, channel & 0x0000FFFF);
+  return EVENT_CHANNEL_SIZE;
 }
 
 static inline int __set_channel (Fm_tuner *fm_tuner, char *buf, int channel) {
@@ -69,11 +81,7 @@ static inline int __set_channel (Fm_tuner *fm_tuner, char *buf, int channel) {
   }
 
   printf("[server]Set channel: %d.\n", new_channel);
-
-  *buf++ = EVENT_CHANNEL;
-  serialize_uint16(buf, new_channel & 0x0000FFFF);
-
-  return 3;
+  return __add_channel_to_buf(buf, new_channel);
 }
 
 /* --------------------------------------------------------------------- */
@@ -90,21 +98,21 @@ static int __parse_event (char *buf, int len, Handler_value *value) {
   while (len > 0)
     switch (*buf++) {
       case EVENT_VOLUME:
-        if (len < 2)
+        if (len < EVENT_VOLUME_SIZE)
           return -1;
 
         to_set |= MASK_VOLUME;
         buf = deserialize_uint8(buf, &new_volume);
-        len -= 2;
+        len -= EVENT_VOLUME_SIZE;
         break;
 
       case EVENT_CHANNEL:
-        if (len < 3)
+        if (len < EVENT_CHANNEL_SIZE)
           return -1;
 
         to_set |= MASK_CHANNEL;
         buf = deserialize_uint16(buf, &new_channel);
-        len -= 3;
+        len -= EVENT_CHANNEL_SIZE;
         break;
 
       default:
@@ -125,7 +133,7 @@ static int __parse_event (char *buf, int len, Handler_value *value) {
 /* --------------------------------------------------------------------- */
 
 static void __broadcast (Socket_set *ss, Handler_value *value) {
-  static char buf[BROADCAST_BUFFER_SIZE];
+  static char buf[SEND_BUFFER_SIZE];
   char *p = buf + 1;
 
   Socket sock;
@@ -186,11 +194,18 @@ int handler_event (Socket sock, int id, char *buf, int len, void *user_value) {
 }
 
 void *handler_join (Socket sock, int id, void *user_value) {
-  (void)sock;
-  (void)id;
-  (void)user_value;
+  Handler_value *value = user_value;
+  static char buf[SEND_BUFFER_SIZE];
+  char *p = buf + 1;
 
-  /* TODO: Envoyer le son/channel. */
+  (void)id;
+
+  p += __add_volume_to_buf(buf, fm_tuner_get_volume(value->fm_tuner));
+  p += __add_channel_to_buf(buf, fm_tuner_get_channel(value->fm_tuner));
+  *buf = p - buf;
+
+  if (*buf - 1 > 0)
+    tcp_send(sock, buf, *buf);
 
   return 0;
 }
@@ -230,7 +245,7 @@ void handler_loop (Socket_set *ss, void *user_value) {
   }
 
   /* Brooooooooadcast. */
-  __broadcast (ss, value);
+  __broadcast(ss, value);
 
   return;
 }
