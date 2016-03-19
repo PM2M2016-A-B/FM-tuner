@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 
+/* Type de données transmises. */
 #define DATA_TYPE_MUSIC 0
 #define DATA_TYPE_TRAFFIC 1
 #define DATA_TYPE_SPEECH 2

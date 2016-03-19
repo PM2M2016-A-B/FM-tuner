@@ -31,6 +31,8 @@
 #define EVENT_MALFORMED_MESSAGE 0
 #define EVENT_VOLUME 1
 #define EVENT_CHANNEL 2
+#define EVENT_SEEKUP 3
+#define EVENT_SEEKDOWN 4
 
 /* Taille des events. size(Id_event) + size(Data_event) en bytes. */
 #define EVENT_VOLUME_SIZE 2
@@ -41,8 +43,10 @@ static const char MALFORMED_MESSAGE[] = { 1, EVENT_MALFORMED_MESSAGE };
 #define MALFORMED_MESSAGE_SIZE (sizeof(MALFORMED_MESSAGE))
 
 /* Masks utilisés sur Handler_value.to_set. */
-#define MASK_VOLUME 0x01
-#define MASK_CHANNEL 0x02
+#define MASK_VOLUME (1 << (EVENT_VOLUME - 1))
+#define MASK_CHANNEL (1 << (EVENT_CHANNEL - 1))
+#define MASK_SEEKUP (1 << (EVENT_SEEKUP - 1))
+#define MASK_SEEKDOWN (1 << (EVENT_SEEKDOWN - 1))
 
 #define SEND_BUFFER_SIZE 128
 
@@ -54,7 +58,7 @@ static inline int __add_volume_to_buf(char *buf, int volume) {
   return EVENT_VOLUME_SIZE;
 }
 
-static inline int __set_volume (Fm_tuner *fm_tuner, char *buf, int volume) {
+static int __set_volume (Fm_tuner *fm_tuner, char *buf, int volume) {
   int new_volume = fm_tuner_set_volume(fm_tuner, volume);
 
   if (new_volume == -1) {
@@ -72,7 +76,7 @@ static inline int __add_channel_to_buf(char *buf, int channel) {
   return EVENT_CHANNEL_SIZE;
 }
 
-static inline int __set_channel (Fm_tuner *fm_tuner, char *buf, int channel) {
+static int __set_channel (Fm_tuner *fm_tuner, char *buf, int channel) {
   int new_channel = fm_tuner_set_channel(fm_tuner, channel);
 
   if (new_channel == -1) {
@@ -81,6 +85,20 @@ static inline int __set_channel (Fm_tuner *fm_tuner, char *buf, int channel) {
   }
 
   printf("[server]Set channel: %d.\n", new_channel);
+  return __add_channel_to_buf(buf, new_channel);
+}
+
+static int __seek (Fm_tuner *fm_tuner, char *buf, int direction) {
+  int cur_channel = fm_tuner_get_channel(fm_tuner);
+  int new_channel;
+  int success;
+
+  if ((new_channel = fm_tuner_seek(fm_tuner, direction, &success)) == -1 || !success) {
+    error("[server]Seek failed.");
+    return __set_channel(fm_tuner, buf, cur_channel);
+  }
+
+  printf("[server]Seek success, channel: %d.\n", new_channel);
   return __add_channel_to_buf(buf, new_channel);
 }
 
@@ -115,6 +133,18 @@ static int __parse_event (char *buf, int len, Handler_value *value) {
         len -= EVENT_CHANNEL_SIZE;
         break;
 
+      case EVENT_SEEKUP:
+        to_set |= MASK_SEEKUP;
+        buf++;
+        len--;
+        break;
+
+      case EVENT_SEEKDOWN:
+        to_set |= MASK_SEEKDOWN;
+        buf++;
+        len--;
+        break;
+
       default:
         return -1;
     }
@@ -142,8 +172,13 @@ static void __broadcast (Socket_set *ss, Handler_value *value) {
   /* Mise à jour des registres. */
   if (value->to_set & MASK_VOLUME)
     p += __set_volume(value->fm_tuner, p, value->new_volume);
+
   if (value->to_set & MASK_CHANNEL)
     p += __set_channel(value->fm_tuner, p, value->new_channel);
+  else if (value->to_set & MASK_SEEKUP)
+    p += __seek(value->fm_tuner, p, FM_TUNER_SEEKUP);
+  else if (value->to_set & MASK_SEEKDOWN)
+    p += __seek(value->fm_tuner, p, FM_TUNER_SEEKDOWN);
 
   /* TODO: RDS */
 

@@ -23,8 +23,8 @@
 #define FM_TUNER_VOLUME_MAX 15
 
 /* Directions possibles du seek. */
-#define FM_TUNER_SEEK_PREV 0
-#define FM_TUNER_SEEK_NEXT 1
+#define FM_TUNER_SEEKDOWN 0
+#define FM_TUNER_SEEKUP 1
 
 typedef struct Fm_tuner Fm_tuner;
 
