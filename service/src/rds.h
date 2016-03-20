@@ -19,9 +19,39 @@
 #include <stdint.h>
 
 /* Type de données transmises. */
-#define DATA_TYPE_MUSIC 0
-#define DATA_TYPE_TRAFFIC 1
-#define DATA_TYPE_SPEECH 2
+#define RDS_DATA_TYPE_MUSIC 0
+#define RDS_DATA_TYPE_TRAFFIC 1
+#define RDS_DATA_TYPE_SPEECH 2
+
+/* Type de programme. */
+#define RDS_PT_NONE 0x00
+#define RDS_PT_NEWS 0x01
+#define RDS_PT_INFORM 0x02
+#define RDS_PT_SPORTS 0x03
+#define RDS_PT_TALK 0x04
+#define RDS_PT_ROCK 0x05
+#define RDS_PT_CLASSIC_ROCK 0x06
+#define RDS_PT_ADULT_HITS 0x07
+#define RDS_PT_SOFT_ROCK 0x08
+#define RDS_PT_TOP_40 0x09
+#define RDS_PT_COUNTRY 0x0A
+#define RDS_PT_OLDIES 0x0B
+#define RDS_PT_SOFT 0x0C
+#define RDS_PT_NOSTALGIA 0x0D
+#define RDS_PT_JAZZ 0x0E
+#define RDS_PT_CLASSICAL 0x0F
+#define RDS_PT_RYTHM_AND_BLUES 0x10
+#define RDS_PT_SOFT_RYTHM_AND_BLUES 0x11
+#define RDS_PT_FOREIGN_LANGUAGE 0x12
+#define RDS_PT_RELIGIOUS_MUSIC 0x13
+#define RDS_PT_RELIGIOUS_TALK 0x14
+#define RDS_PT_PERSONALITY 0x15
+#define RDS_PT_PUBLIC 0x16
+#define RDS_PT_COLLEGE 0x17
+#define RDS_PT_WEATHER 0x1D
+#define RDS_PT_EMERGENCY_TEST 0x1E
+#define RDS_PT_EMERGENCY 0X1F
+#define RDS_PT_UNKNOWN 0x18
 
 typedef struct Rds Rds;
 

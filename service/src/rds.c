@@ -25,6 +25,9 @@
 #define RDSC 2
 #define RDSD 3
 
+#define BIT_GROUP_ID 12
+#define BIT_PT 5
+
 /* Masks relatifs à la norme RDS. */
 #define MASK_GROUP_ID 0xF000
 #define MASK_GROUP_VERSION 0x0800
@@ -33,21 +36,22 @@
 #define MASK_RADIO_TEXT_PART 0x000F
 
 #define MASK_MS 0x0008 /* Music/Speech. */
-#define MASK_TA 0x0010 /* Traffic Annoucement. */
-#define MASK_TP 0x0800 /* Traffic Program. */
+#define MASK_TA 0x0010 /* Traffic Announcement. */
+#define MASK_TP 0x0400 /* Traffic Program. */
+#define MASK_PT 0x03E0 /* Program Type. */
 
 /* Bits et masks relatifs à l'attribut bit_fields
    de la structure RDS. */
-#define ST_BIT_NAME 0
-#define ST_BIT_TEXT 2
+#define ST_BIT_NAME 0 /* Length: 2. */
+#define ST_BIT_TEXT 2 /* Length: 4. */
+#define ST_BIT_PT 6   /* Length: 4. */
+#define ST_BIT_MS 10  /* Length: 1. */
+#define ST_BIT_TA 11  /* Length: 1. */
+#define ST_BIT_TP 12  /* Length: 1. */
 
-#define ST_BIT_MS 6
-#define ST_BIT_TA 7
-#define ST_BIT_TP 8
-
-#define ST_MASK_NAME 0x03
-#define ST_MASK_TEXT 0x3C
-
+#define ST_MASK_NAME 0x0003
+#define ST_MASK_TEXT 0x003C
+#define ST_MASK_PT 0x03C0
 #define ST_MASK_MS (1 << ST_BIT_MS)
 #define ST_MASK_TA (1 << ST_BIT_TA)
 #define ST_MASK_TP (1 << ST_BIT_TP)
@@ -70,7 +74,7 @@ struct Rds {
 };
 
 Rds *rds_new (void) {
-  return pnew(Rds);
+  return pnew0(Rds);
 }
 
 void rds_free (Rds *rds) {
@@ -81,7 +85,7 @@ void rds_free (Rds *rds) {
 }
 
 static void __get_group_type (uint16_t blocks[], int *id, int *version) {
-  *id = (blocks[RDSB] & MASK_GROUP_ID) >> 12;
+  *id = (blocks[RDSB] & MASK_GROUP_ID) >> BIT_GROUP_ID;
   *version = !!(blocks[RDSB] & MASK_GROUP_VERSION);
 
   return;
@@ -193,6 +197,10 @@ void rds_decode (Rds *rds, uint16_t blocks[]) {
   rds->bit_fields &= ~ST_MASK_TP;
   rds->bit_fields |= (!!(blocks[RDSB] & MASK_TP)) << ST_BIT_TP;
 
+  /* Récupération du Program Type. */
+  rds->bit_fields &= ~ST_MASK_PT;
+  rds->bit_fields |= ((blocks[RDSB] & MASK_PT) >> BIT_PT) << ST_BIT_PT;
+
   version_c = !version ? 'A' : 'B';
   debug("Group type: %d%c\n", id, version_c);
 
@@ -212,11 +220,11 @@ void rds_decode (Rds *rds, uint16_t blocks[]) {
 
 int rds_get_data_type (Rds *rds) {
   if (rds->bit_fields & (ST_MASK_TA | ST_MASK_TP))
-    return DATA_TYPE_TRAFFIC;
+    return RDS_DATA_TYPE_TRAFFIC;
   if (rds->bit_fields & ST_MASK_MS)
-    return DATA_TYPE_MUSIC;
+    return RDS_DATA_TYPE_MUSIC;
 
-  return DATA_TYPE_SPEECH;
+  return RDS_DATA_TYPE_SPEECH;
 }
 
 const char *rds_get_radio_name (Rds *rds) {
@@ -225,4 +233,13 @@ const char *rds_get_radio_name (Rds *rds) {
 
 const char *rds_get_radio_text (Rds *rds) {
   return rds->radio_text;
+}
+
+int rds_get_program_type (Rds *rds) {
+  int pt = (rds->bit_fields & ST_MASK_PT) >> ST_BIT_PT;
+
+  if (pt > RDS_PT_COLLEGE && pt < RDS_PT_WEATHER)
+    return RDS_PT_UNKNOWN;
+
+  return pt;
 }

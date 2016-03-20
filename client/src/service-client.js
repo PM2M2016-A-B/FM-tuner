@@ -84,8 +84,12 @@ export default class ServiceClient {
 
   async _send (buf) {
     return new Promise((resolve, reject) => {
-      this._socket.on('end', reject)
-      this._socket.write(buf, resolve)
+      const { _socket } = this
+      _socket.on('end', reject)
+      _socket.write(buf, () => {
+        _socket.removeListener('end', reject)
+        resolve()
+      })
     })
   }
 
