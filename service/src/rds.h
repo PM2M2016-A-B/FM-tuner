@@ -62,7 +62,7 @@ Rds *rds_new (void);
 void rds_free (Rds *rds);
 
 /* Décode le contenu de blocks RDS et le stocke dans rds. */
-void rds_decode (Rds *rds, uint16_t blocks[]);
+void rds_decode (Rds *rds, uint16_t blocks[static 4]);
 
 /* Retourne le type de données: MUSIC, TRAFFIC ou SPEECH. */
 int rds_get_data_type (Rds *rds);
@@ -70,5 +70,8 @@ int rds_get_data_type (Rds *rds);
 /* Donne un nom/le texte de radio actuellement en mémoire. */
 const char *rds_get_radio_name (Rds *rds);
 const char *rds_get_radio_text (Rds *rds);
+
+/* Retourne le type de programme. */
+int rds_get_program_type (Rds *rds);
 
 #endif /* _RDS_H_ INCLUDED */

@@ -186,7 +186,7 @@ static void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
   return;
 }
 
-void rds_decode (Rds *rds, uint16_t blocks[]) {
+void rds_decode (Rds *rds, uint16_t blocks[static 4]) {
   int id, version;
   char version_c;
 
@@ -219,7 +219,7 @@ void rds_decode (Rds *rds, uint16_t blocks[]) {
 }
 
 int rds_get_data_type (Rds *rds) {
-  if (rds->bit_fields & (ST_MASK_TA | ST_MASK_TP))
+  if ((rds->bit_fields & (ST_MASK_TA | ST_MASK_TP)) == (ST_MASK_TA | ST_MASK_TP))
     return RDS_DATA_TYPE_TRAFFIC;
   if (rds->bit_fields & ST_MASK_MS)
     return RDS_DATA_TYPE_MUSIC;
