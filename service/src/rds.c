@@ -90,7 +90,6 @@ static void __get_group_type (uint16_t blocks[], int *id, int *version) {
 static void __decode_basic_tuning_and_switching_info(Rds *rds, uint16_t blocks[]) {
   int off = blocks[RDSB] & MASK_PSNAME_PART;
   int chars;
-  int part = (rds->bit_fields & ST_MASK_NAME) >> ST_BIT_NAME;
 
   /* Récupération des flags Music/Speech et Traffic Annoucement. */
   rds->bit_fields &= ~ST_MASK_MS;
