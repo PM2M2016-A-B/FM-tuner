@@ -16,6 +16,9 @@
 #ifndef _ERROR_H_
 #define _ERROR_H_
 
+#define STRINGIFY_ME(x) #x
+#define TO_STRING(x) STRINGIFY_ME(x)
+
 /* Affiche un message d'erreur sur stderr ainsi que errno,
    puis quitte le programme. */
 void fatal_error (const char *msg, ...);

@@ -59,8 +59,6 @@
 /* Fin de ligne. */
 #define RDS_CARRIAGE_RETURN 13
 
-
-
 struct Rds {
   char radio_name[RDS_RADIO_NAME_MAX_LENGTH + 1]; /* Nom actuel de la radio. */
   char new_radio_name[RDS_RADIO_NAME_MAX_LENGTH + 1]; /* Nom de la radio en cours de parsing. */
@@ -121,7 +119,7 @@ static void __decode_basic_tuning_and_switching_info(Rds *rds, uint16_t blocks[]
   /* Le nom est complet. */
   #ifdef DEBUG
     if (strcmp(rds->radio_name, rds->new_radio_name))
-      debug("Radio name: '%s'\n", rds->new_radio_name);
+      debug("[rds]Radio name: '%s'\n", rds->new_radio_name);
   #endif
 
   rds->bit_fields &= ~ST_MASK_NAME;
@@ -174,7 +172,7 @@ static void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
   /* Le nom est complet. */
   #ifdef DEBUG
     if (strcmp(rds->radio_text, rds->new_radio_text))
-      debug("Radio text: '%s'\n", rds->new_radio_text);
+      debug("[rds]Radio text: '%s'\n", rds->new_radio_text);
   #endif
 
   rds->bit_fields &= ~ST_MASK_TEXT;
@@ -186,7 +184,6 @@ static void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
 
 void rds_decode (Rds *rds, uint16_t blocks[static 4]) {
   int id, version;
-  char version_c;
 
   __get_group_type(blocks, &id, &version);
 
@@ -199,9 +196,6 @@ void rds_decode (Rds *rds, uint16_t blocks[static 4]) {
   rds->bit_fields &= ~ST_MASK_PT;
   rds->bit_fields |= ((blocks[RDSB] & MASK_PT) >> BIT_PT) << ST_BIT_PT;
 
-  version_c = !version ? 'A' : 'B';
-  debug("Group type: %d%c\n", id, version_c);
-
   switch (id) {
     case 0:
       __decode_basic_tuning_and_switching_info(rds, blocks);
@@ -210,7 +204,7 @@ void rds_decode (Rds *rds, uint16_t blocks[static 4]) {
       __decode_radio_text(rds, blocks, version);
       break;
     default:
-      printf("[rds]Unsupported group type: %d%c.\n", id, version_c);
+      printf("[rds]Unsupported group type: %d%c.\n", id, !version ? 'A' : 'B');
   }
 
   return;
