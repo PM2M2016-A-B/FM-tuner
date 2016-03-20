@@ -53,6 +53,10 @@
 #define RDS_PT_EMERGENCY 0X1F
 #define RDS_PT_UNKNOWN 0x18
 
+/* Longueur max du nom et du texte d'une station conformément à la norme RDS. */
+#define RDS_RADIO_NAME_MAX_LENGTH 8
+#define RDS_RADIO_TEXT_MAX_LENGTH 64
+
 typedef struct Rds Rds;
 
 /* Crée un objet Rds. */

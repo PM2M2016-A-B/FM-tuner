@@ -33,6 +33,8 @@
 #define EVENT_CHANNEL 2
 #define EVENT_SEEKUP 3
 #define EVENT_SEEKDOWN 4
+#define EVENT_RADIO_NAME 5
+#define EVENT_RADIO_TEXT 6
 
 /* Taille des events. size(Id_event) + size(Data_event) en bytes. */
 #define EVENT_VOLUME_SIZE 2
@@ -52,11 +54,26 @@ static const char MALFORMED_MESSAGE[] = { 1, EVENT_MALFORMED_MESSAGE };
 
 /* --------------------------------------------------------------------- */
 
-static inline int __add_volume_to_buf(char *buf, int volume) {
-  *buf++ = EVENT_VOLUME;
-  serialize_uint8(buf, volume & 0x000000FF);
-  return EVENT_VOLUME_SIZE;
+static inline int __add_uint8_to_buf (char *buf, uint8_t event, uint8_t value) {
+  *buf++ = event;
+  serialize_uint8(buf, value);
+  return 2;
 }
+
+static inline int __add_uint16_to_buf (char *buf, uint8_t event, uint16_t value) {
+  *buf++ = event;
+  serialize_uint16(buf, value);
+  return 3;
+}
+
+static int __add_text_to_buf (char *buf, uint8_t event, const char *s, uint8_t len) {
+  *buf++ = event;
+  *buf++ = len;
+  strncpy(buf, s, len);
+  return len + 2;
+}
+
+/* --------------------------------------------------------------------- */
 
 static int __set_volume (Fm_tuner *fm_tuner, char *buf, int volume) {
   int new_volume = fm_tuner_set_volume(fm_tuner, volume);
@@ -67,13 +84,7 @@ static int __set_volume (Fm_tuner *fm_tuner, char *buf, int volume) {
   }
 
   printf("[server]Set volume: %d.\n", new_volume);
-  return __add_volume_to_buf(buf, new_volume);
-}
-
-static inline int __add_channel_to_buf(char *buf, int channel) {
-  *buf++ = EVENT_CHANNEL;
-  serialize_uint16(buf, channel & 0x0000FFFF);
-  return EVENT_CHANNEL_SIZE;
+  return __add_uint8_to_buf(buf, EVENT_VOLUME, new_volume);
 }
 
 static int __set_channel (Fm_tuner *fm_tuner, char *buf, int channel) {
@@ -85,7 +96,7 @@ static int __set_channel (Fm_tuner *fm_tuner, char *buf, int channel) {
   }
 
   printf("[server]Set channel: %d.\n", new_channel);
-  return __add_channel_to_buf(buf, new_channel);
+  return __add_uint16_to_buf(buf, EVENT_CHANNEL, new_channel);
 }
 
 static int __seek (Fm_tuner *fm_tuner, char *buf, int direction) {
@@ -99,7 +110,31 @@ static int __seek (Fm_tuner *fm_tuner, char *buf, int direction) {
   }
 
   printf("[server]Seek success, channel: %d.\n", new_channel);
-  return __add_channel_to_buf(buf, new_channel);
+  return __add_uint16_to_buf(buf, EVENT_CHANNEL, new_channel);
+}
+
+static int __set_radio_name (Rds *rds, char *buf) {
+  static char prev_radio_name[RDS_RADIO_NAME_MAX_LENGTH + 1];
+  const char *radio_name = rds_get_radio_name(rds);
+
+  if (strcmp(prev_radio_name, radio_name)) {
+    strcpy(prev_radio_name, radio_name);
+    return __add_text_to_buf(buf, EVENT_RADIO_NAME, radio_name, strlen(radio_name));
+  }
+
+  return 0;
+}
+
+static int __set_radio_text (Rds *rds, char *buf) {
+  static char prev_radio_text[RDS_RADIO_TEXT_MAX_LENGTH + 1];
+  const char *radio_text = rds_get_radio_text(rds);
+
+  if (strcmp(prev_radio_text, radio_text)) {
+    strcpy(prev_radio_text, radio_text);
+    return __add_text_to_buf(buf, EVENT_RADIO_TEXT, radio_text, strlen(radio_text));
+  }
+
+  return 0;
 }
 
 /* --------------------------------------------------------------------- */
@@ -160,44 +195,6 @@ static int __parse_event (char *buf, int len, Handler_value *value) {
   return 0;
 }
 
-/* --------------------------------------------------------------------- */
-
-static void __broadcast (Socket_set *ss, Handler_value *value) {
-  static char buf[SEND_BUFFER_SIZE];
-  char *p = buf + 1;
-
-  Socket sock;
-  int i = socket_set_get_max_size(ss);
-
-  /* Mise à jour des registres. */
-  if (value->to_set & MASK_VOLUME)
-    p += __set_volume(value->fm_tuner, p, value->new_volume);
-
-  if (value->to_set & MASK_CHANNEL)
-    p += __set_channel(value->fm_tuner, p, value->new_channel);
-  else if (value->to_set & MASK_SEEKUP)
-    p += __seek(value->fm_tuner, p, FM_TUNER_SEEKUP);
-  else if (value->to_set & MASK_SEEKDOWN)
-    p += __seek(value->fm_tuner, p, FM_TUNER_SEEKDOWN);
-
-  /* TODO: RDS */
-
-  *buf = p - buf;
-
-  /* Broadcast. */
-  if (*buf - 1 > 0)
-    for (i--; i > 0; i--)
-      if ((sock = socket_set_get(ss, i)) != -1)
-        tcp_send(sock, buf, *buf);
-
-  /* Reset. */
-  value->to_set = 0;
-
-  return;
-}
-
-/* --------------------------------------------------------------------- */
-
 int handler_event (Socket sock, int id, char *buf, int len, void *user_value) {
   Handler_value *value = user_value;
   int msg_len = len;
@@ -230,6 +227,8 @@ int handler_event (Socket sock, int id, char *buf, int len, void *user_value) {
   return len - msg_len;
 }
 
+/* --------------------------------------------------------------------- */
+
 void handler_join (Socket sock, int id, void *user_value) {
   Handler_value *value = user_value;
   static char buf[SEND_BUFFER_SIZE];
@@ -238,8 +237,8 @@ void handler_join (Socket sock, int id, void *user_value) {
   (void)id;
 
   /* Envoie les valeurs actuelles du volume/channel. */
-  p += __add_volume_to_buf(p, fm_tuner_get_volume(value->fm_tuner));
-  p += __add_channel_to_buf(p, fm_tuner_get_channel(value->fm_tuner));
+  p += __add_uint8_to_buf(p, EVENT_VOLUME, fm_tuner_get_volume(value->fm_tuner));
+  p += __add_uint16_to_buf(p, EVENT_CHANNEL, fm_tuner_get_channel(value->fm_tuner));
   *buf = p - buf;
 
   if (*buf - 1 > 0)
@@ -247,6 +246,8 @@ void handler_join (Socket sock, int id, void *user_value) {
 
   return;
 }
+
+/* --------------------------------------------------------------------- */
 
 void handler_quit (Socket sock, int id, void *user_value) {
   (void)sock;
@@ -256,17 +257,13 @@ void handler_quit (Socket sock, int id, void *user_value) {
   return;
 }
 
-void handler_loop (Socket_set *ss, void *user_value) {
-  static uint16_t prev_blocks[4]; /* Permet d'éliminer les doublons. */
+/* --------------------------------------------------------------------- */
+
+static void __sleep (void) {
   static Time t_prev;
   static Time t_cur;
-
-  Handler_value *value = user_value;
-  uint16_t blocks[4];
-  int data_exists;
   long sleep_time;
 
-  /* Sleep. */
   time_get_cur(&t_cur);
 
   sleep_time = SLEEP_DELAY - time_diff(&t_prev, &t_cur);
@@ -274,7 +271,14 @@ void handler_loop (Socket_set *ss, void *user_value) {
 
   time_get_cur(&t_prev);
 
-  /* Parsing du RDS. */
+  return;
+}
+
+static void __rds_decode (Handler_value *value) {
+  static uint16_t prev_blocks[4]; /* Permet d'éliminer les doublons. */
+  uint16_t blocks[4];
+  int data_exists;
+
   fm_tuner_read_rds(value->fm_tuner, blocks, &data_exists);
 
   if (data_exists && memcmp(blocks, prev_blocks, RDS_BLOCKS_SIZE)) {
@@ -282,8 +286,48 @@ void handler_loop (Socket_set *ss, void *user_value) {
     memcpy(prev_blocks, blocks, RDS_BLOCKS_SIZE);
   }
 
-  /* Brooooooooadcast. */
-  __broadcast(ss, value);
+  return;
+}
+
+static void __broadcast (Socket_set *ss, Handler_value *value) {
+  static char buf[SEND_BUFFER_SIZE];
+  Socket sock;
+  char *p = buf + 1;
+  int i = socket_set_get_max_size(ss);
+
+  /* Mise à jour des registres. */
+  if (value->to_set & MASK_VOLUME)
+    p += __set_volume(value->fm_tuner, p, value->new_volume);
+
+  if (value->to_set & MASK_CHANNEL)
+    p += __set_channel(value->fm_tuner, p, value->new_channel);
+  else if (value->to_set & MASK_SEEKUP)
+    p += __seek(value->fm_tuner, p, FM_TUNER_SEEKUP);
+  else if (value->to_set & MASK_SEEKDOWN)
+    p += __seek(value->fm_tuner, p, FM_TUNER_SEEKDOWN);
+
+  /* Ajout du RDS. */
+  p += __set_radio_name(value->rds, p);
+  p += __set_radio_text(value->rds, p);
+
+  *buf = p - buf;
+
+  /* Broadcast. */
+  if (*buf - 1 > 0)
+    for (i--; i > 0; i--)
+      if ((sock = socket_set_get(ss, i)) != -1)
+        tcp_send(sock, buf, *buf);
+
+  /* Reset. */
+  value->to_set = 0;
+
+  return;
+}
+
+void handler_loop (Socket_set *ss, void *user_value) {
+  __sleep();
+  __rds_decode(user_value);
+  __broadcast(ss, user_value);
 
   return;
 }

@@ -59,16 +59,14 @@
 /* Fin de ligne. */
 #define RDS_CARRIAGE_RETURN 13
 
-/* Longueur max du nom et du texte d'une station conformément à la norme RDS. */
-#define RADIO_NAME_MAX_LENGTH 8
-#define RADIO_TEXT_MAX_LENGTH 64
+
 
 struct Rds {
-  char radio_name[RADIO_NAME_MAX_LENGTH + 1]; /* Nom actuel de la radio. */
-  char new_radio_name[RADIO_NAME_MAX_LENGTH + 1]; /* Nom de la radio en cours de parsing. */
+  char radio_name[RDS_RADIO_NAME_MAX_LENGTH + 1]; /* Nom actuel de la radio. */
+  char new_radio_name[RDS_RADIO_NAME_MAX_LENGTH + 1]; /* Nom de la radio en cours de parsing. */
 
-  char radio_text[RADIO_TEXT_MAX_LENGTH + 1]; /* Texte actuel de la radio. */
-  char new_radio_text[RADIO_TEXT_MAX_LENGTH + 1]; /* Texte de la radio en cours de parsing. */
+  char radio_text[RDS_RADIO_TEXT_MAX_LENGTH + 1]; /* Texte actuel de la radio. */
+  char new_radio_text[RDS_RADIO_TEXT_MAX_LENGTH + 1]; /* Texte de la radio en cours de parsing. */
 
   uint16_t bit_fields; /* Diverses informations RDS. */
 };
@@ -127,8 +125,8 @@ static void __decode_basic_tuning_and_switching_info(Rds *rds, uint16_t blocks[]
   #endif
 
   rds->bit_fields &= ~ST_MASK_NAME;
-  memcpy(rds->radio_name, rds->new_radio_name, RADIO_NAME_MAX_LENGTH);
-  memset(rds->new_radio_name, 0, RADIO_NAME_MAX_LENGTH);
+  memcpy(rds->radio_name, rds->new_radio_name, RDS_RADIO_NAME_MAX_LENGTH);
+  memset(rds->new_radio_name, 0, RDS_RADIO_NAME_MAX_LENGTH);
 
   return;
 }
@@ -180,8 +178,8 @@ static void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
   #endif
 
   rds->bit_fields &= ~ST_MASK_TEXT;
-  memcpy(rds->radio_text, rds->new_radio_text, RADIO_TEXT_MAX_LENGTH);
-  memset(rds->new_radio_text, 0, RADIO_TEXT_MAX_LENGTH);
+  memcpy(rds->radio_text, rds->new_radio_text, RDS_RADIO_TEXT_MAX_LENGTH);
+  memset(rds->new_radio_text, 0, RDS_RADIO_TEXT_MAX_LENGTH);
 
   return;
 }

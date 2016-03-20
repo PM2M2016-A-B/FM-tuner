@@ -19,7 +19,7 @@ const HOST = '192.168.7.2'
 const PORT = 9502
 
 const DEFAULT_VOLUME = 1
-const DEFAULT_CHANNEL = 931
+const DEFAULT_CHANNEL = 933
 
 async function run () {
   const client = new ServiceClient()

@@ -18,6 +18,8 @@ import { Socket } from 'net'
 
 const EVENT_VOLUME = 0x01
 const EVENT_CHANNEL = 0x02
+const EVENT_RADIO_NAME = 0x05
+const EVENT_RADIO_TEXT = 0x06
 
 // ===================================================================
 
@@ -37,12 +39,28 @@ export default class ServiceClient {
       if (event === EVENT_VOLUME) {
         console.log(`Volume: ${buf.readUInt8(i)}.`)
         i++
-      } else if (event === EVENT_CHANNEL) {
+        continue
+      }
+
+      if (event === EVENT_CHANNEL) {
         console.log(`Channel: ${buf.readUInt16BE(i)}.`)
         i += 2
+        continue
+      }
+
+      let attr
+
+      if (event === EVENT_RADIO_NAME) {
+        attr = 'name'
+      } else if (event === EVENT_RADIO_TEXT) {
+        attr = 'text'
       } else {
         throw Error('Unknown event.')
       }
+
+      const len = buf.readUInt8(i)
+      console.log(`Radio ${attr}: ${buf.slice(i + 1, i + 1 + len)}`)
+      i += len + 1
     }
   }
 
