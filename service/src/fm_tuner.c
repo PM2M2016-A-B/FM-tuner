@@ -76,6 +76,9 @@
 #define VAL_POWER_ON 0x4001
 #define VAL_POWER_OFF 0x0041
 
+#define STC_DISABLED 0
+#define STC_ENABLED 1
+
 struct Fm_tuner {
   int bus;
   uint16_t regs[FM_TUNER_REGISTERS_N];
@@ -100,11 +103,11 @@ static inline int __get_channel (Fm_tuner *fm_tuner) {
   return channel + CHANNEL_OFFSET;
 }
 
-static int __wait_stc (Fm_tuner *fm_tuner) {
+static int __wait_stc (Fm_tuner *fm_tuner, int status) {
   for (;;) {
     if (fm_tuner_read_registers(fm_tuner) == -1)
       return -1;
-    if (!(fm_tuner->regs[REG_STATUSRSSI] & MASK_STC))
+    if (!!(fm_tuner->regs[REG_STATUSRSSI] & MASK_STC) == status)
       break;
 
     sleep_m(1);
@@ -324,14 +327,14 @@ int fm_tuner_set_channel (Fm_tuner *fm_tuner, int channel) {
     return -1;
 
   /* On attend que le tune soit pris en compte. */
-  if (__wait_stc(fm_tuner) == -1)
+  if (__wait_stc(fm_tuner, STC_ENABLED) == -1)
     return -1;
 
   /* Remise à 0 du bit TUNE. */
   fm_tuner->regs[REG_CHANNEL] &= ~MASK_TUNE;
 
   if (fm_tuner_write_registers(fm_tuner) == -1 ||
-    __wait_stc(fm_tuner) == -1)
+      __wait_stc(fm_tuner, STC_DISABLED) == -1)
     return -1;
 
   return channel;
@@ -365,7 +368,7 @@ int fm_tuner_seek (Fm_tuner *fm_tuner, int direction, int *success) {
   fm_tuner->regs[REG_POWERCFG] |= MASK_SEEK;
 
   if (fm_tuner_write_registers(fm_tuner) == -1 ||
-      __wait_stc(fm_tuner) == -1)
+      __wait_stc(fm_tuner, STC_ENABLED) == -1)
     return -1;
 
   /* Indique si oui ou non le changement de station a pu se faire. */
@@ -375,7 +378,7 @@ int fm_tuner_seek (Fm_tuner *fm_tuner, int direction, int *success) {
   fm_tuner->regs[REG_POWERCFG] &= ~MASK_SEEK;
 
   if (fm_tuner_write_registers(fm_tuner) == -1 ||
-      __wait_stc(fm_tuner) == -1)
+      __wait_stc(fm_tuner, STC_DISABLED) == -1)
     return -1;
 
   return __get_channel(fm_tuner);
