@@ -33,14 +33,14 @@ export default class ServiceClient {
 
     for (const attr of [ 'volume', 'channel', 'radioName', 'radioText' ]) {
       if (actions[attr] === undefined) {
-        actions[attr] = val => { console.log(`${attr}: ${val}.`) }
+        actions[attr] = val => { console.log(`${attr}: '${val}'`) }
       }
     }
 
     this._actions = actions
   }
 
-  _parseServiceMsg (buf) {
+  _parseMsg (buf) {
     let i = 0
     const { _actions: actions } = this
 
@@ -91,7 +91,7 @@ export default class ServiceClient {
       const len = buf.readUInt8(0)
 
       if (this._off >= len) {
-        this._parseServiceMsg(buf.slice(1, len))
+        this._parseMsg(buf.slice(1, len))
         buf.copy(buf, len, this._off)
         this._off -= len
       } else {
@@ -100,24 +100,31 @@ export default class ServiceClient {
     }
   }
 
-  async connect (host, port) {
-    const { _socket: socket } = this
-    socket.connect({ host, port })
-    socket.on('data', ::this._onData)
-
-    this.endConnection = eventToPromise(socket, 'end')
-    await eventToPromise(socket, 'connect')
-  }
-
   async _send (buf) {
     return new Promise((resolve, reject) => {
-      const { socket: socket } = this
+      const { _socket: socket } = this
       socket.on('end', reject)
       socket.write(buf, () => {
         socket.removeListener('end', reject)
         resolve()
       })
     })
+  }
+
+  async connect (host, port) {
+    const { _socket: socket } = this
+    socket.connect({ host, port })
+    socket.on('data', data => {
+      try {
+        this._onData(data)
+      } catch (error) {
+        console.error(error)
+        process.exit(1)
+      }
+    })
+
+    this.endConnection = eventToPromise(socket, 'end')
+    await eventToPromise(socket, 'connect')
   }
 
   async setVolume (volume) {

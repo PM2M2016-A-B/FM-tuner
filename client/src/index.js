@@ -13,6 +13,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import mqtt from 'mqtt'
+import eventToPromise from 'event-to-promise'
 import ServiceClient from './service-client'
 
 const HOST = '192.168.7.2'
@@ -21,8 +23,37 @@ const PORT = 9502
 const DEFAULT_VOLUME = 1
 const DEFAULT_CHANNEL = 933
 
+const MQTT_URL = ''
+const MQTT_TOPIC = ''
+const ENABLE_MQTT = 0
+
+// ===================================================================
+
 async function run () {
-  const client = new ServiceClient()
+  let mqttClient
+
+  if (ENABLE_MQTT) {
+    mqttClient = mqtt.connect(MQTT_URL)
+
+    await eventToPromise(mqttClient, 'connect')
+    await new Promise((resolve, reject) => {
+      mqttClient.suscribe(MQTT_TOPIC, (err, granted) => {
+        if (err) reject(err)
+        resolve(granted)
+      })
+    })
+  }
+
+  const client = new ServiceClient({
+    actions: {
+      radioName: ENABLE_MQTT && (name => {
+        mqttClient.publish(MQTT_TOPIC, `NAME ${name}`)
+      }) || undefined,
+      radioText: ENABLE_MQTT && (text => {
+        mqttClient.publish(MQTT_TOPIC, `TEXT ${text}`)
+      }) || undefined
+    }
+  })
 
   await client.connect(HOST, PORT)
   await Promise.all([
