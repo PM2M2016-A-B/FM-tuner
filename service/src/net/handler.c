@@ -66,16 +66,17 @@ static inline int __add_uint16_to_buf (char *buf, uint8_t event, uint16_t value)
   return 3;
 }
 
-static int __add_text_to_buf (char *buf, uint8_t event, const char *s, uint8_t len) {
+static inline int __add_text_to_buf (char *buf, uint8_t event, const char *s, uint8_t len) {
   *buf++ = event;
   *buf++ = len;
   strncpy(buf, s, len);
+
   return len + 2;
 }
 
 /* --------------------------------------------------------------------- */
 
-static int __set_volume (Fm_tuner *fm_tuner, char *buf, int volume) {
+static int __add_volume_to_buf (Fm_tuner *fm_tuner, char *buf, int volume) {
   int new_volume = fm_tuner_set_volume(fm_tuner, volume);
 
   if (new_volume == -1) {
@@ -87,7 +88,7 @@ static int __set_volume (Fm_tuner *fm_tuner, char *buf, int volume) {
   return __add_uint8_to_buf(buf, EVENT_VOLUME, new_volume);
 }
 
-static int __set_channel (Fm_tuner *fm_tuner, char *buf, int channel) {
+static int __add_channel_to_buf (Fm_tuner *fm_tuner, char *buf, int channel) {
   int new_channel = fm_tuner_set_channel(fm_tuner, channel);
 
   if (new_channel == -1) {
@@ -99,21 +100,21 @@ static int __set_channel (Fm_tuner *fm_tuner, char *buf, int channel) {
   return __add_uint16_to_buf(buf, EVENT_CHANNEL, new_channel);
 }
 
-static int __seek (Fm_tuner *fm_tuner, char *buf, int direction) {
+static int __add_seek_to_buf (Fm_tuner *fm_tuner, char *buf, int direction) {
   int cur_channel = fm_tuner_get_channel(fm_tuner);
   int new_channel;
   int success;
 
   if ((new_channel = fm_tuner_seek(fm_tuner, direction, &success)) == -1 || !success) {
     error("[server]Seek failed.");
-    return __set_channel(fm_tuner, buf, cur_channel);
+    return __add_channel_to_buf(fm_tuner, buf, cur_channel);
   }
 
   printf("[server]Seek success, channel: %d.\n", new_channel);
   return __add_uint16_to_buf(buf, EVENT_CHANNEL, new_channel);
 }
 
-static int __set_radio_name (Rds *rds, char *buf) {
+static int __add_radio_name_to_buf (Rds *rds, char *buf) {
   static char prev_radio_name[RDS_RADIO_NAME_MAX_LENGTH + 1];
   const char *radio_name = rds_get_radio_name(rds);
 
@@ -125,7 +126,7 @@ static int __set_radio_name (Rds *rds, char *buf) {
   return 0;
 }
 
-static int __set_radio_text (Rds *rds, char *buf) {
+static int __add_radio_text_to_buf (Rds *rds, char *buf) {
   static char prev_radio_text[RDS_RADIO_TEXT_MAX_LENGTH + 1];
   const char *radio_text = rds_get_radio_text(rds);
 
@@ -297,18 +298,18 @@ static void __broadcast (Socket_set *ss, Handler_value *value) {
 
   /* Mise à jour des registres. */
   if (value->to_set & MASK_VOLUME)
-    p += __set_volume(value->fm_tuner, p, value->new_volume);
+    p += __add_volume_to_buf(value->fm_tuner, p, value->new_volume);
 
   if (value->to_set & MASK_CHANNEL)
-    p += __set_channel(value->fm_tuner, p, value->new_channel);
+    p += __add_channel_to_buf(value->fm_tuner, p, value->new_channel);
   else if (value->to_set & MASK_SEEKUP)
-    p += __seek(value->fm_tuner, p, FM_TUNER_SEEKUP);
+    p += __add_seek_to_buf(value->fm_tuner, p, FM_TUNER_SEEKUP);
   else if (value->to_set & MASK_SEEKDOWN)
-    p += __seek(value->fm_tuner, p, FM_TUNER_SEEKDOWN);
+    p += __add_seek_to_buf(value->fm_tuner, p, FM_TUNER_SEEKDOWN);
 
   /* Ajout du RDS. */
-  p += __set_radio_name(value->rds, p);
-  p += __set_radio_text(value->rds, p);
+  p += __add_radio_name_to_buf(value->rds, p);
+  p += __add_radio_text_to_buf(value->rds, p);
 
   *buf = p - buf;
 

@@ -29,9 +29,9 @@ async function run () {
     client.setVolume(DEFAULT_VOLUME),
     client.setChannel(DEFAULT_CHANNEL)
   ])
-  await client.waitEnd().then(() => {
-    throw new Error('Disconnected!')
-  })
+  await client.waitEndConnection()
+
+  throw new Error('Disconnected!')
 }
 
 // ===================================================================

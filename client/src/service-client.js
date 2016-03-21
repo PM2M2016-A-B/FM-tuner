@@ -24,42 +24,55 @@ const EVENT_RADIO_TEXT = 0x06
 // ===================================================================
 
 export default class ServiceClient {
-  constructor () {
+  constructor ({
+    actions
+  } = {}) {
     this._socket = new Socket()
     this._buf = new Buffer(128)
     this._off = 0
+
+    for (const attr of [ 'volume', 'channel', 'radioName', 'radioText' ]) {
+      if (actions[attr] === undefined) {
+        actions[attr] = val => { console.log(`${attr}: ${val}.`) }
+      }
+    }
+
+    this._actions = actions
   }
 
   _parseServiceMsg (buf) {
     let i = 0
+    const { _actions: actions } = this
 
     while (i < buf.length) {
       const event = buf.readUInt8(i++)
 
       if (event === EVENT_VOLUME) {
-        console.log(`Volume: ${buf.readUInt8(i)}.`)
+        actions.volume(buf.readUInt8(i))
         i++
         continue
       }
 
       if (event === EVENT_CHANNEL) {
-        console.log(`Channel: ${buf.readUInt16BE(i)}.`)
+        actions.channel(buf.readUInt16BE(i))
         i += 2
         continue
       }
 
-      let attr
-
-      if (event === EVENT_RADIO_NAME) {
-        attr = 'name'
-      } else if (event === EVENT_RADIO_TEXT) {
-        attr = 'text'
-      } else {
+      if (event !== EVENT_RADIO_NAME && event !== EVENT_RADIO_TEXT) {
         throw Error('Unknown event.')
       }
 
       const len = buf.readUInt8(i)
-      console.log(`Radio ${attr}: ${buf.slice(i + 1, i + 1 + len)}`)
+      const start = i + 1
+      buf = buf.slice(start, start + len)
+
+      if (event === EVENT_RADIO_NAME) {
+        actions.radioName(buf)
+      } else {
+        actions.radioText(buf)
+      }
+
       i += len + 1
     }
   }
@@ -70,42 +83,38 @@ export default class ServiceClient {
     data.copy(buf, this._off)
     this._off += data.length
 
-    try {
-      if (this._off >= buf.length) {
-        throw new Error('The buffer is full.')
-      }
+    if (this._off >= buf.length) {
+      throw new Error('The buffer is full.')
+    }
 
-      while (this._off > 0) {
-        const len = buf.readUInt8(0)
+    while (this._off > 0) {
+      const len = buf.readUInt8(0)
 
-        if (this._off >= len) {
-          this._parseServiceMsg(buf.slice(1, len))
-          buf.copy(buf, len, this._off)
-          this._off -= len
-        } else {
-          break
-        }
+      if (this._off >= len) {
+        this._parseServiceMsg(buf.slice(1, len))
+        buf.copy(buf, len, this._off)
+        this._off -= len
+      } else {
+        break
       }
-    } catch (error) {
-      this._off = 0
     }
   }
 
   async connect (host, port) {
-    const { _socket } = this
-    _socket.connect({ host, port })
-    _socket.on('data', ::this._onData)
+    const { _socket: socket } = this
+    socket.connect({ host, port })
+    socket.on('data', ::this._onData)
 
-    this._end = eventToPromise(_socket, 'end')
-    await eventToPromise(_socket, 'connect')
+    this.endConnection = eventToPromise(socket, 'end')
+    await eventToPromise(socket, 'connect')
   }
 
   async _send (buf) {
     return new Promise((resolve, reject) => {
-      const { _socket } = this
-      _socket.on('end', reject)
-      _socket.write(buf, () => {
-        _socket.removeListener('end', reject)
+      const { socket: socket } = this
+      socket.on('end', reject)
+      socket.write(buf, () => {
+        socket.removeListener('end', reject)
         resolve()
       })
     })
@@ -127,7 +136,7 @@ export default class ServiceClient {
     return this._send(buf)
   }
 
-  async waitEnd () {
-    return this._end
+  async waitEndConnection () {
+    return this.endConnection
   }
 }
