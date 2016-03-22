@@ -38,6 +38,15 @@ typedef struct Server {
 
 /* ---------------------------------------------------------------------- */
 
+static void __disable_signals (sigset_t *old_set) {
+  sigset_t set;
+
+  sigfillset(&set);
+  sigprocmask(SIG_BLOCK, &set, old_set);
+
+  return;
+}
+
 static void __sig_handler (int sig) {
   (void)sig;
   return;
@@ -176,48 +185,60 @@ static void __handle_client(Server *server, Server_conf *conf, Socket sock, int 
 
 /* --------------------------------------------------------------------- */
 
-void server_run (Server_conf *conf, int timeout) {
-  Server server;
-  Sockets_states states;
+static void __run (Server *server, Server_conf *conf, int timeout) {
   Socket sock;
-  pthread_t thread_exit;
+  Sockets_states states;
   unsigned int i;
 
+  for (;;) {
+    pthread_mutex_lock(&server->lock_run);
+
+    if (!server->run)
+      break;
+
+    pthread_mutex_unlock(&server->lock_run);
+
+    if (socket_set_select(server->ss, &states, NULL, timeout) == -1)
+      error("Select error.");
+
+    /* Socket serveur. */
+    if (socket_is_ready(server->sock, &states))
+      __handle_server(server, conf);
+
+    /* Sockets clients. */
+    for (i = 1; i <= conf->max_clients; i++) {
+      sock = socket_set_get(server->ss, i);
+
+      if (socket_is_ready(sock, &states))
+        __handle_client(server, conf, sock, i);
+    }
+
+    conf->handlers.loop(server->ss, conf->user_value);
+  }
+
+  pthread_mutex_unlock(&server->lock_run);
+
+  return;
+}
+
+void server_run (Server_conf *conf, int timeout) {
+  Server server;
+  pthread_t thread_exit;
+
+  sigset_t old_set;
+
+  __disable_signals(&old_set);
   __server_init(&server, conf);
 
   if (pthread_create(&thread_exit, NULL, __thread_exit, &server) != 0)
     fatal_error("Unable to create thread_exit.");
 
-  for (;;) {
-    pthread_mutex_lock(&server.lock_run);
+  __run(&server, conf, timeout);
 
-    if (!server.run)
-      break;
-
-    pthread_mutex_unlock(&server.lock_run);
-
-    if (socket_set_select(server.ss, &states, NULL, timeout) == -1)
-      error("Select error.");
-
-    /* Socket serveur. */
-    if (socket_is_ready(server.sock, &states))
-      __handle_server(&server, conf);
-
-    /* Sockets clients. */
-    for (i = 1; i <= conf->max_clients; i++) {
-      sock = socket_set_get(server.ss, i);
-
-      if (socket_is_ready(sock, &states))
-        __handle_client(&server, conf, sock, i);
-    }
-
-    conf->handlers.loop(server.ss, conf->user_value);
-  }
-
-  pthread_mutex_unlock(&server.lock_run);
   pthread_join(thread_exit, NULL);
 
   __server_close(&server, conf);
+  sigprocmask(SIG_BLOCK, &old_set, NULL);
 
   return;
 }
