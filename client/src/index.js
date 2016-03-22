@@ -21,7 +21,7 @@ const HOST = '192.168.7.2'
 const PORT = 9502
 
 const DEFAULT_VOLUME = 1
-const DEFAULT_CHANNEL = 933
+const DEFAULT_CHANNEL = 978
 
 const MQTT_URL = ''
 const MQTT_TOPIC = ''

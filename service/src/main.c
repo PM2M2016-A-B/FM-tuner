@@ -33,6 +33,8 @@
 
 static Fm_tuner *fm_tuner;
 
+/* --------------------------------------------------------------------- */
+
 static void __disable_leds (void) {
   int i;
 

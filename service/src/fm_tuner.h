@@ -26,6 +26,9 @@
 #define FM_TUNER_SEEKDOWN 0
 #define FM_TUNER_SEEKUP 1
 
+/* Valeur max du rssi donné par le tunner en dBuV. */
+#define FM_TUNER_RSSI_MAX 75
+
 typedef struct Fm_tuner Fm_tuner;
 
 /* Configuration du tuner. */

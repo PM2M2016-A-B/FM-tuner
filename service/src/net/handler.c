@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "../hw/led.h"
 #include "../utils/error.h"
 #include "../utils/ptime.h"
 
@@ -136,6 +137,21 @@ static int __add_radio_text_to_buf (Rds *rds, char *buf) {
   }
 
   return 0;
+}
+
+/* --------------------------------------------------------------------- */
+
+static void __update_leds (Fm_tuner *fm_tuner) {
+  float rssi = fm_tuner_get_rssi(fm_tuner) * 100 / (float)FM_TUNER_RSSI_MAX;
+  int n = rssi / 20;
+  int i;
+
+  for (i = 0; i < n; i++)
+    led_set_state(i, LED_ACTIVE);
+  for (; i < LEDS_N; i++)
+    led_set_state(i, LED_INACTIVE);
+
+  return;
 }
 
 /* --------------------------------------------------------------------- */
@@ -327,6 +343,7 @@ static void __broadcast (Socket_set *ss, Handler_value *value) {
 
 void handler_loop (Socket_set *ss, void *user_value) {
   __sleep();
+  __update_leds(((Handler_value *)user_value)->fm_tuner);
   __rds_decode(user_value);
   __broadcast(ss, user_value);
 
