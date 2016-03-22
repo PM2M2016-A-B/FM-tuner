@@ -18,18 +18,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "fm_tuner.h"
 #include "hw/led.h"
 #include "net/handler.h"
 #include "net/server.h"
+#include "seek.h" /* seek_utils. */
 #include "utils/error.h"
-
-#include "fm_tuner.h"
 
 #define DEFAULT_I2C_ID 1
 #define DEFAULT_MAX_CLIENTS 10
 #define DEFAULT_PIN_RST 45
 #define DEFAULT_PIN_SDIO 12
 #define DEFAULT_PORT 9502
+
+#define MODE_SERVER 0
+#define MODE_SEEK 1
 
 static Fm_tuner *fm_tuner;
 
@@ -44,7 +47,7 @@ static void __disable_leds (void) {
   return;
 }
 
-static Fm_tuner *__create_tuner (Fm_tuner_conf *conf) {
+static void __create_tuner (Fm_tuner_conf *conf) {
   fm_tuner = fm_tuner_new(conf);
 
   debug("Init FM tuner.\n");
@@ -54,7 +57,7 @@ static Fm_tuner *__create_tuner (Fm_tuner_conf *conf) {
     fm_tuner_print_registers(fm_tuner);
   #endif
 
-  return fm_tuner;
+  return;
 }
 
 static void __delete_tuner (void) {
@@ -64,19 +67,20 @@ static void __delete_tuner (void) {
 
 static void __usage (const char *progname) {
   printf("Usage: %s [OPTION]...\n", progname);
-  printf("  -h, --help         Print this helper.\n");
-  printf("  -i, --i2c-id       Set the i2c bus id. Default: %d.\n", DEFAULT_I2C_ID);
-  printf("  -m, --max-clients  Set the number max of server clients. Default: %d.\n", DEFAULT_MAX_CLIENTS);
-  printf("  -p, --port         Set the server port. Default: %d.\n", DEFAULT_PORT);
-  printf("  -r, --reset-pin    Set the reset pin number of the fm tuner. Default: %d.\n", DEFAULT_PIN_RST);
-  printf("  -s, --sdio-pin     Set the sdio pin number of the fm tuner. Default: %d.\n", DEFAULT_PIN_SDIO);
+  printf("  -h, --help           Print this helper.\n");
+  printf("  -i, --i2c-id=ID      Set the i2c bus id. Default: %d.\n", DEFAULT_I2C_ID);
+  printf("  -m, --max-clients=N  Set the number max of server clients. Default: %d.\n", DEFAULT_MAX_CLIENTS);
+  printf("  -p, --port=PORT      Set the server port. Default: %d.\n", DEFAULT_PORT);
+  printf("  -r, --reset-pin=PIN  Set the reset pin number of the fm tuner. Default: %d.\n", DEFAULT_PIN_RST);
+  printf("  -s, --sdio-pin=PIN   Set the sdio pin number of the fm tuner. Default: %d.\n", DEFAULT_PIN_SDIO);
+  printf("      --seek           Seek to locate radio stations.\n");
 
   exit(EXIT_SUCCESS);
 }
 
 /* --------------------------------------------------------------------- */
 
-static void __parse_arguments (int argc, char *argv[], Server_conf *server_conf, Fm_tuner_conf *fm_tuner_conf) {
+static int __parse_arguments (int argc, char *argv[], Server_conf *server_conf, Fm_tuner_conf *fm_tuner_conf) {
   static const char *opts = "hm:p:i:r:s:";
   static struct option long_opts[] = {
     { "help", no_argument, NULL, 'h' },
@@ -85,18 +89,27 @@ static void __parse_arguments (int argc, char *argv[], Server_conf *server_conf,
     { "port", required_argument, NULL, 'p' },
     { "reset-pin", required_argument, NULL, 'r' },
     { "sdio-pin", required_argument, NULL, 's' },
+    { "seek", no_argument, NULL, 'l' },
     { 0, 0, 0, 0}
   };
+
   int opt;
   int opt_index;
   long value;
   char *endptr;
+
+  int mode = MODE_SERVER;
 
   errno = 0;
 
   while ((opt = getopt_long(argc, argv, opts, long_opts, &opt_index)) != -1) {
     if (opt == 'h' || opt == '?')
       __usage(*argv);
+
+    if (opt == 'l') {
+      mode = MODE_SEEK;
+      continue;
+    }
 
     if ((value = strtol(optarg, &endptr, 10)) < 0 || errno != 0 || optarg == endptr) {
       fprintf(stderr, "error: %s must be an valid unsigned integer.\n", long_opts[opt_index].name);
@@ -122,14 +135,14 @@ static void __parse_arguments (int argc, char *argv[], Server_conf *server_conf,
     }
   }
 
-  return;
+  return mode;
 }
 
 int main (int argc, char *argv[]) {
-  Handler_value handler_value = {
+  static Handler_value handler_value = {
     .to_set = 0
   };
-  Server_conf server_conf = {
+  static Server_conf server_conf = {
     .port = DEFAULT_PORT,
     .max_clients = DEFAULT_MAX_CLIENTS,
     .user_value = &handler_value,
@@ -140,22 +153,27 @@ int main (int argc, char *argv[]) {
       .loop = handler_loop
     }
   };
-  Fm_tuner_conf fm_tuner_conf = {
+  static Fm_tuner_conf fm_tuner_conf = {
     .i2c_id = DEFAULT_I2C_ID,
     .pin_rst = DEFAULT_PIN_RST,
     .pin_sdio = DEFAULT_PIN_SDIO,
     .tuner_addr = 0x10
   };
 
-  __parse_arguments(argc, argv, &server_conf, &fm_tuner_conf);
+  int mode = __parse_arguments(argc, argv, &server_conf, &fm_tuner_conf);
 
-  handler_value.rds = rds_new();
-  handler_value.fm_tuner = __create_tuner(&fm_tuner_conf);
+  __create_tuner(&fm_tuner_conf);
   atexit(__delete_tuner);
   __disable_leds();
 
-  server_run(&server_conf, 500);
-  rds_free(handler_value.rds);
+  if (mode == MODE_SEEK)
+    seek_utils(fm_tuner);
+  else {
+    handler_value.fm_tuner = fm_tuner;
+    handler_value.rds = rds_new();
+    server_run(&server_conf, 500);
+    rds_free(handler_value.rds);
+  }
 
   exit(EXIT_SUCCESS);
 }

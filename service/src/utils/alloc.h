@@ -42,6 +42,6 @@
 
 #define pmalloc(P, SIZE) __pmalloc(P, malloc, (SIZE))
 #define pmalloc0(P, SIZE) __pmalloc(P, calloc, (1, SIZE))
-#define prealloc(P, SIZE) __prealloc(P, realloc, (P, SIZE))
+#define prealloc(P, SIZE) __pmalloc(P, realloc, (P, SIZE))
 
 #endif /* _ALLOC_H_ INCLUDED */

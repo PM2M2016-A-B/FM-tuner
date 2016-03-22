@@ -70,8 +70,6 @@
 #define MASK_TUNE 0x8000
 #define MASK_VOLUME 0x000F
 
-#define CHANNEL_OFFSET 875
-
 #define VAL_OSCILLATOR 0x8100
 #define VAL_POWER_ON 0x4001
 #define VAL_POWER_OFF 0x0041
@@ -100,7 +98,7 @@ static inline int __get_channel (Fm_tuner *fm_tuner) {
     channel *= 2;
   #endif
 
-  return channel + CHANNEL_OFFSET;
+  return channel + FM_TUNER_CHANNEL_START;
 }
 
 static int __wait_stc (Fm_tuner *fm_tuner, int status) {
@@ -305,7 +303,7 @@ int fm_tuner_get_volume (Fm_tuner *fm_tuner) {
 
 /* Documentation: "doc/AN230.pdf", page 22. */
 int fm_tuner_set_channel (Fm_tuner *fm_tuner, int channel) {
-  int rds_channel = channel - CHANNEL_OFFSET;
+  int rds_channel = channel - FM_TUNER_CHANNEL_START;
 
   #ifdef AMERICAN_VERSION
     rds_channel /= 2;
@@ -372,7 +370,7 @@ int fm_tuner_seek (Fm_tuner *fm_tuner, int direction, int *success) {
     return -1;
 
   /* Indique si oui ou non le changement de station a pu se faire. */
-  *success = fm_tuner->regs[REG_STATUSRSSI] & MASK_SFBL;
+  *success = !(fm_tuner->regs[REG_STATUSRSSI] & MASK_SFBL);
 
   /* Reset du seek. */
   fm_tuner->regs[REG_POWERCFG] &= ~MASK_SEEK;

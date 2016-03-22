@@ -17,8 +17,6 @@
 #include <stdlib.h>
 #include <string.h> /* memcpy */
 
-#include "socket.h"
-
 #if defined __unix__
   #include <fcntl.h> /* fcntl & O_NONBLOCK */
   #include <netdb.h> /* gethostbyname */
@@ -29,6 +27,8 @@
   /* Pour compatibilité... */
   #define h_addr h_addr_list[0]
 #endif
+
+#include "socket.h"
 
 struct Socket_set {
   Socket *socks;

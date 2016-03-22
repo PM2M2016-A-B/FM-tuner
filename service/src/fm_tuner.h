@@ -29,6 +29,8 @@
 /* Valeur max du rssi donné par le tunner en dBuV. */
 #define FM_TUNER_RSSI_MAX 75
 
+#define FM_TUNER_CHANNEL_START 875
+
 typedef struct Fm_tuner Fm_tuner;
 
 /* Configuration du tuner. */
