@@ -16,9 +16,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "seek.h"
 #include "utils/alloc.h"
+#include "utils/error.h"
 #include "utils/ptime.h"
+
+#include "seek.h"
 
 #define RSSI_TRIES 10
 
@@ -32,8 +34,9 @@ int channel_data_cmp (const void *a, const void *b) {
 }
 
 void seek_utils (Fm_tuner *fm_tuner) {
-  int channel, success, rssi;
-  int i;
+  int channel, success;
+  float rssi;
+  int i, n;
   int n_data = 0;
   Channel_data *data = NULL;
 
@@ -45,8 +48,13 @@ void seek_utils (Fm_tuner *fm_tuner) {
 
     printf("Channel %d...\n", channel);
 
-    for (i = 0; i < RSSI_TRIES; i++)
-      rssi += fm_tuner_get_rssi(fm_tuner);
+    for (i = 0; i < RSSI_TRIES; i++) {
+      if ((n = fm_tuner_get_rssi(fm_tuner)) == -1)
+        fatal_error("Unable to get RSSI.");
+
+      rssi += n;
+      sleep_m(1);
+    }
 
     rssi /= RSSI_TRIES;
 
