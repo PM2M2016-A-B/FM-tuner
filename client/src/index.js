@@ -50,9 +50,11 @@ async function run () {
   const client = new ServiceClient({
     actions: {
       radioName: ENABLE_MQTT && (name => {
+        console.log(`radioName: '${name}'`)
         // mqttClient.publish(MQTT_TOPIC, name)
       }) || undefined,
       radioText: ENABLE_MQTT && (text => {
+        console.log(`radioText: '${text}'`)
         mqttClient.publish(MQTT_TOPIC, text)
       }) || undefined
     }

@@ -132,7 +132,7 @@ static void __decode_basic_tuning_and_switching_info(Rds *rds, uint16_t blocks[]
 static void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
   int off = blocks[RDSB] & MASK_RADIO_TEXT_PART;
   int chars;
-  int i, completed;
+  int i;
 
   /* Vérification de la position de l'offset du text de la radio.
      S'il n'est pas bon, on reset et on attend une prochaine séquence. */
@@ -157,7 +157,7 @@ static void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
   }
 
   for (i = 0; i < 4; i++)
-    if ((completed = rds->new_radio_text[chars + i]) == RDS_CARRIAGE_RETURN) {
+    if (rds->new_radio_text[chars + i] == RDS_CARRIAGE_RETURN) {
       rds->new_radio_text[chars + i] = '\0';
       break;
     }
