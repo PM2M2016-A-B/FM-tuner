@@ -20,21 +20,23 @@
 
 #include "pin.h"
 
+#define BUFFER_SIZE 128
 #define PATH_PIN_PREFIX "/sys/class/gpio/gpio"
 #define PATH_EXPORT "/sys/class/gpio/export"
 
 /* Documentation: "doc/GPIO_Programming_on_the_Beaglebone.pdf" */
 
 static inline int __get_pin_directory (char *dest, int pin) {
-  return sprintf(dest, PATH_PIN_PREFIX "%d/", pin & 0xFF);
+  return snprintf(dest, BUFFER_SIZE, PATH_PIN_PREFIX "%d/", pin & 0xFF);
 }
 
 int pin_open (int pin) {
-  char buf[128];
+  char buf[BUFFER_SIZE];
   char pin_s[4];
   int fd;
 
-  __get_pin_directory(buf, pin);
+  if (__get_pin_directory(buf, pin) >= BUFFER_SIZE)
+    return -1;
 
   if (!access(buf, F_OK))
     return 0;
@@ -51,11 +53,12 @@ int pin_open (int pin) {
 }
 
 static int __set_attribute (int pin, const char *attribute, const char *value) {
-  char buf[128];
+  char buf[BUFFER_SIZE];
   int fd;
   int end = __get_pin_directory(buf, pin);
 
-  sprintf(buf + end, attribute);
+  if (end >= BUFFER_SIZE || snprintf(buf + end, BUFFER_SIZE, attribute) >= BUFFER_SIZE)
+    return -1;
 
   if ((fd = open(buf, O_WRONLY)) == -1)
     return -1;

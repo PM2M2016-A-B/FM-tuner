@@ -21,15 +21,17 @@
 
 #include "i2c.h"
 
+#define BUFFER_SIZE 128
 #define PATH_I2C "/dev/i2c-"
 
 /* Documentation: https://www.kernel.org/doc/Documentation/i2c/dev-interface */
 
 int i2c_open (unsigned int bus_id, char addr) {
   int fd;
-  char filename[128];
+  char filename[BUFFER_SIZE];
 
-  sprintf(filename, PATH_I2C "%d", bus_id);
+  if (snprintf(filename, BUFFER_SIZE, PATH_I2C "%d", bus_id) >= BUFFER_SIZE)
+    return -1;
 
   if ((fd = open(filename, O_RDWR)) == -1)
     return -1;

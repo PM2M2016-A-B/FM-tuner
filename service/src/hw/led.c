@@ -20,16 +20,18 @@
 
 #include "led.h"
 
+#define BUFFER_SIZE 128
 #define PATH_LEDS "/sys/class/leds/beaglebone:green:usr"
 
 static int __set_attribute (int id, const char *filename, const char *value) {
   int fd;
-  char buf[128];
+  char buf[BUFFER_SIZE];
 
   if (id < 0 || id > LEDS_N)
     return -1;
 
-  sprintf(buf, PATH_LEDS "%d/%s", id, filename);
+  if (snprintf(buf, BUFFER_SIZE, PATH_LEDS "%d/%s", id, filename) >= BUFFER_SIZE)
+    return -1;
 
   if ((fd = open(buf, O_WRONLY)) == -1)
     return -1;
