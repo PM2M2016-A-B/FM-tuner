@@ -16,7 +16,7 @@
 #ifndef _FM_TUNER_
 #define _FM_TUNER_
 
-#include <stdint.h>
+#include "rds.h"
 
 /* Intervalle du volume du tuner. */
 #define FM_TUNER_VOLUME_MIN 0
@@ -86,7 +86,7 @@ int fm_tuner_seek (Fm_tuner *fm_tuner, int direction, int *success);
 /* Stocke dans blocks des données rds si elles existent.
    Dans le cas où elles existent, data_exists vaut 1 sinon 0.
    Retourne -1 en cas d'échec, sinon 0. */
-int fm_tuner_read_rds (Fm_tuner *fm_tuner, uint16_t blocks[], int *data_exists);
+int fm_tuner_read_rds (Fm_tuner *fm_tuner, uint16_t blocks[static RDS_BLOCKS_N], int *data_exists);
 
 /* Retourne le RSSI actuel ou -1 en cas d'erreur.
    Max: 75dBuV. */

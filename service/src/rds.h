@@ -57,6 +57,8 @@
 #define RDS_RADIO_NAME_MAX_LENGTH 8
 #define RDS_RADIO_TEXT_MAX_LENGTH 64
 
+#define RDS_BLOCKS_N 4
+
 typedef struct Rds Rds;
 
 /* Crée un objet Rds. */
@@ -66,7 +68,7 @@ Rds *rds_new (void);
 void rds_free (Rds *rds);
 
 /* Décode le contenu de blocks RDS et le stocke dans rds. */
-void rds_decode (Rds *rds, uint16_t blocks[static 4]);
+void rds_decode (Rds *rds, uint16_t blocks[static RDS_BLOCKS_N]);
 
 /* Retourne le type de données: MUSIC, TRAFFIC ou SPEECH. */
 int rds_get_data_type (Rds *rds);

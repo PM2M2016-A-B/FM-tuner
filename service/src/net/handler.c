@@ -25,7 +25,7 @@
 #define SLEEP_DELAY 40
 
 /* Taille totale en bytes des blocks RDS. */
-#define RDS_BLOCKS_SIZE (4 * sizeof(uint16_t))
+#define RDS_BLOCKS_SIZE (RDS_BLOCKS_N * sizeof(uint16_t))
 
 /* Types d'events clients/serveur. */
 #define EVENT_MALFORMED_MESSAGE 0
@@ -276,8 +276,8 @@ static void __sleep (void) {
 }
 
 static void __rds_decode (Handler_value *value) {
-  static uint16_t prev_blocks[4]; /* Permet d'éliminer les doublons. */
-  uint16_t blocks[4];
+  static uint16_t prev_blocks[RDS_BLOCKS_N]; /* Permet d'éliminer les doublons. */
+  uint16_t blocks[RDS_BLOCKS_N];
   int data_exists;
 
   fm_tuner_read_rds(value->fm_tuner, blocks, &data_exists);

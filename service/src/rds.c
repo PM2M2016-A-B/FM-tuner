@@ -182,7 +182,7 @@ static void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
   return;
 }
 
-void rds_decode (Rds *rds, uint16_t blocks[static 4]) {
+void rds_decode (Rds *rds, uint16_t blocks[static RDS_BLOCKS_N]) {
   int id, version;
 
   __get_group_type(blocks, &id, &version);

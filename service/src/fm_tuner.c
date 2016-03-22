@@ -385,14 +385,14 @@ int fm_tuner_seek (Fm_tuner *fm_tuner, int direction, int *success) {
 }
 
 /* Documentation: "doc/AN230.pdf", page 12. */
-int fm_tuner_read_rds (Fm_tuner *fm_tuner, uint16_t blocks[4], int *data_exists) {
+int fm_tuner_read_rds (Fm_tuner *fm_tuner, uint16_t blocks[static RDS_BLOCKS_N], int *data_exists) {
   int i;
 
   if (fm_tuner_read_registers(fm_tuner) == -1)
     return -1;
 
   if (fm_tuner->regs[REG_STATUSRSSI] & MASK_TEST_RDS) {
-    for (i = 0; i < 4; i++)
+    for (i = 0; i < RDS_BLOCKS_N; i++)
       blocks[i] = fm_tuner->regs[REG_RDSA + i];
 
     *data_exists = 1;
