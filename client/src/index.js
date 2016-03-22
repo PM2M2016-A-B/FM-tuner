@@ -33,11 +33,14 @@ async function run () {
   let mqttClient
 
   if (ENABLE_MQTT) {
-    mqttClient = mqtt.connect(MQTT_URL)
+    mqttClient = mqtt.connect(MQTT_URL, {
+      protocolId: 'MQIsdp',
+      protocolVersion: 3
+    })
 
     await eventToPromise(mqttClient, 'connect')
     await new Promise((resolve, reject) => {
-      mqttClient.suscribe(MQTT_TOPIC, (err, granted) => {
+      mqttClient.subscribe(MQTT_TOPIC, (err, granted) => {
         if (err) reject(err)
         resolve(granted)
       })
@@ -47,10 +50,10 @@ async function run () {
   const client = new ServiceClient({
     actions: {
       radioName: ENABLE_MQTT && (name => {
-        mqttClient.publish(MQTT_TOPIC, `NAME ${name}`)
+        // mqttClient.publish(MQTT_TOPIC, name)
       }) || undefined,
       radioText: ENABLE_MQTT && (text => {
-        mqttClient.publish(MQTT_TOPIC, `TEXT ${text}`)
+        mqttClient.publish(MQTT_TOPIC, text)
       }) || undefined
     }
   })
