@@ -65,12 +65,12 @@ export default class ServiceClient {
 
       const len = buf.readUInt8(i)
       const start = i + 1
-      buf = buf.slice(start, start + len)
+      const radioData = buf.slice(start, start + len)
 
       if (event === EVENT_RADIO_NAME) {
-        actions.radioName(buf)
+        actions.radioName(radioData)
       } else {
-        actions.radioText(buf)
+        actions.radioText(radioData)
       }
 
       i += len + 1

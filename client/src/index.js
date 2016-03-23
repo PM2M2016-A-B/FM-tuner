@@ -38,7 +38,10 @@ async function run () {
       protocolVersion: 3
     })
 
+    console.log('MQTT connection...')
     await eventToPromise(mqttClient, 'connect')
+    console.log('Connected!')
+
     await new Promise((resolve, reject) => {
       mqttClient.subscribe(MQTT_TOPIC, (err, granted) => {
         if (err) reject(err)
@@ -49,13 +52,11 @@ async function run () {
 
   const client = new ServiceClient({
     actions: {
-      radioName: ENABLE_MQTT && (name => {
-        console.log(`radioName: '${name}'`)
-        // mqttClient.publish(MQTT_TOPIC, name)
-      }) || undefined,
       radioText: ENABLE_MQTT && (text => {
         console.log(`radioText: '${text}'`)
-        mqttClient.publish(MQTT_TOPIC, text)
+        mqttClient.publish(MQTT_TOPIC, text, err => {
+          if (err) console.log(`Publish error: ${err}`)
+        })
       }) || undefined
     }
   })
