@@ -91,6 +91,10 @@ static void __decode_basic_tuning_and_switching_info(Rds *rds, uint16_t blocks[]
   int off = blocks[RDSB] & MASK_PSNAME_PART;
   int chars;
 
+  #ifdef DEBUG
+    int i;
+  #endif
+
   /* Récupération des flags Music/Speech et Traffic Annoucement. */
   rds->bit_fields &= ~ST_MASK_MS;
   rds->bit_fields |= (!!(blocks[RDSB] & MASK_MS)) << ST_BIT_MS;
@@ -118,8 +122,14 @@ static void __decode_basic_tuning_and_switching_info(Rds *rds, uint16_t blocks[]
 
   /* Le nom est complet. */
   #ifdef DEBUG
-    if (strcmp(rds->radio_name, rds->new_radio_name))
-      debug("[rds]Radio name: '%s'\n", rds->new_radio_name);
+    if (strcmp(rds->radio_name, rds->new_radio_name)) {
+      debug("[rds]Radio name: '%s' (", rds->new_radio_name);
+
+      for (i = 0; i < RDS_RADIO_NAME_MAX_LENGTH; i++)
+        debug("%d, ", rds->new_radio_name[i]);
+
+      debug("0)\n");
+    }
   #endif
 
   rds->bit_fields &= ~ST_MASK_NAME;
@@ -132,7 +142,7 @@ static void __decode_basic_tuning_and_switching_info(Rds *rds, uint16_t blocks[]
 static void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
   int off = blocks[RDSB] & MASK_RADIO_TEXT_PART;
   int chars;
-  int i;
+  int i, n = (!version + 1) * 2;
 
   /* Vérification de la position de l'offset du text de la radio.
      S'il n'est pas bon, on reset et on attend une prochaine séquence. */
@@ -142,24 +152,25 @@ static void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
   }
 
   /* Attention: 2x plus de lettres transmises en 1 message pour la version A. */
-  chars = off * (!version + 1) * 2;
+  chars = off * n;
 
   /* Récupération de 4 lettres pour la version A et de 2 pour la version B. */
-  if (!version) {
+  if (n == 4) {
     rds->new_radio_text[chars] = (blocks[RDSC] & 0xFF00) >> 8;
     rds->new_radio_text[chars + 1] = blocks[RDSC] & 0x00FF;
     rds->new_radio_text[chars + 2] = (blocks[RDSD] & 0xFF00) >> 8;
     rds->new_radio_text[chars + 3] = blocks[RDSD] & 0x00FF;
   }
+  /* n = 2. */
   else {
     rds->new_radio_text[chars] = (blocks[RDSD] & 0xFF00) >> 8;
     rds->new_radio_text[chars + 1] = blocks[RDSD] & 0x00FF;
   }
 
-  for (i = 0; i < 4; i++)
+  for (i = 0; i < n; i++)
     if (rds->new_radio_text[chars + i] == RDS_CARRIAGE_RETURN) {
       rds->new_radio_text[chars + i] = '\0';
-      break;
+      goto text_completed;
     }
 
   /* Le nom n'est pas complet, on met à jour l'offset. */
@@ -169,10 +180,18 @@ static void __decode_radio_text (Rds *rds, uint16_t blocks[], int version) {
     return;
   }
 
+ text_completed:
+
   /* Le nom est complet. */
   #ifdef DEBUG
-    if (strcmp(rds->radio_text, rds->new_radio_text))
-      debug("[rds]Radio text: '%s'\n", rds->new_radio_text);
+    if (strcmp(rds->radio_text, rds->new_radio_text)) {
+      debug("[rds]Radio text: '%s' (", rds->new_radio_text);
+
+      for (i = 0; i < RDS_RADIO_TEXT_MAX_LENGTH; i++)
+        debug("%d, ", rds->new_radio_text[i]);
+
+      debug("0)\n");
+    }
   #endif
 
   rds->bit_fields &= ~ST_MASK_TEXT;

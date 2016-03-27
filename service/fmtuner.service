@@ -1,0 +1,20 @@
+[Unit]
+Description=FM-tuner server.
+Wants=network.target
+Documentation=https://github.com/PM2M2016-A-B/FM-tuner
+
+[Service]
+Type=simple
+User=root
+Group=root
+Nice=5
+Environment=
+
+ExecStart=/bin/fmtuner
+KillMode=process
+KillSignal=SIGINT
+Restart=on-failure
+SyslogIdentifier=FM-tuner
+
+[Install]
+WantedBy=multi-user.target

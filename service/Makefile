@@ -48,7 +48,7 @@ OBJ_DIRS = $(OBJ_DIR) $(foreach dir, $(SUB_DIRS), $(addprefix $(OBJ_DIR)/, $(dir
 SRC = $(foreach dir, $(SRC_DIRS), $(wildcard $(dir)/*.c))
 INC = $(foreach dir, $(INC_DIRS), $(addprefix -I, $(dir)))
 OBJ = $(addsuffix .o, $(basename $(subst $(SRC_DIR), $(OBJ_DIR), $(SRC))))
-BIN = rds-mining
+BIN = fmtuner
 
 # Make
 
@@ -71,6 +71,10 @@ $(BIN): $(OBJ)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CXX) $(CXXFLAGS) -I$(INC_DIR)/$(subst $(SRC_DIR)/,,$(dir $<)) -c $< -o $@
+
+install: $(BIN)
+	@echo "Installation..."
+	mv $(BIN_DIR)/$(BIN) /bin/ && mv fmtuner.service /lib/systemd/system/
 
 clean:
 	@rm -f $(OBJ)
