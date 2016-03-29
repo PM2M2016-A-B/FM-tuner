@@ -92,7 +92,7 @@ export default class ServiceClient {
 
       if (this._off >= len) {
         this._parseMsg(buf.slice(1, len))
-        buf.copy(buf, len, this._off)
+        buf.copy(buf, 0, len)
         this._off -= len
       } else {
         break
