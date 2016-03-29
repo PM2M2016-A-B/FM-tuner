@@ -1,0 +1,111 @@
+% Class
+\documentclass{beamer}
+
+% Base
+\usepackage[francais]{babel}
+\usepackage[T1]{fontenc} 
+\usepackage[utf8]{inputenc} 
+
+\usepackage{color, colortbl}
+\usepackage{fancyvrb}
+\usepackage{enumitem}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{algpseudocode}
+\usepackage{array}
+
+% Règle les conflits beamer/enumitem
+\setitemize{label=\usebeamerfont*{itemize item}
+\usebeamercolor[fg]{itemize item}
+\usebeamertemplate{itemize item}}
+  
+% Thème
+\usetheme{Antibes}
+
+% Titre
+\title{M2M - 2016 - RDSMining}
+
+% Dossier images
+\graphicspath{{imgs/}}
+
+% Auteur, lieu, date
+\author{ABHAMON Ronan \\~ BIGARD Florian}
+
+\institute{Université Joseph Fourier}
+\date{\today}
+
+% Puce triangle
+\setbeamertemplate{itemize item}[triangle]
+
+% A chaque changement de section, affichage de la section dans une diapo
+\AtBeginSection[ ]
+{
+	\begin{frame}
+ 		\tableofcontents[currentsection,hideothersubsections]
+ 	\end{frame}
+}
+
+% Marges du diapo
+\setbeamersize{text margin left=0.8cm, text margin right=0.8cm}
+
+% Numéros de pages
+\defbeamertemplate*{footline}{shadow theme}
+{%
+	\leavevmode%
+	\hbox{\begin{beamercolorbox}[wd=1.0\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm plus1fil,rightskip=.3cm]{author in head/foot}%
+    	\usebeamerfont{author in head/foot}\insertframenumber\,/\,\inserttotalframenumber\hfill
+	\end{beamercolorbox}%
+}%
+	\vskip0pt%
+}
+
+\newcolumntype{M}[1]{>{\raggedright}m{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
+
+\begin{document}
+
+% Diapo de présentation
+\begin{frame}
+	\titlepage
+\end{frame}
+
+\section{Architecture}
+\begin{frame}
+	\begin{center}
+		\includegraphics[scale=0.38]{architecture.png}
+	\end{center}
+\end{frame}
+
+\section{Beagleboard black}
+
+\subsection{Service}
+
+\subsection{Service client}
+
+\section{Server}
+
+\subsection{ElasticSearch}
+
+\subsection{Kibana}
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
