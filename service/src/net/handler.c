@@ -55,6 +55,19 @@ static const char MALFORMED_MESSAGE[] = { 1, EVENT_MALFORMED_MESSAGE };
 
 /* --------------------------------------------------------------------- */
 
+static inline void __print_message (const char *buf) {
+  int i;
+
+  for (i = 0; i < *buf; i++)
+      printf("%02x", buf[i]);
+
+  printf(" (length=%d)\n", *buf);
+
+  return;
+}
+
+/* --------------------------------------------------------------------- */
+
 static inline int __add_uint8_to_buf (char *buf, uint8_t event, uint8_t value) {
   *buf++ = event;
   serialize_uint8(buf, value);
@@ -215,16 +228,11 @@ static int __parse_event (char *buf, int len, Handler_value *value) {
 int handler_event (Socket sock, int id, char *buf, int len, void *user_value) {
   Handler_value *value = user_value;
   int msg_len = len;
-  char *p = buf;
 
   /* Parse un ensemble de messages clients. */
   while (msg_len > 0 && msg_len >= *buf) {
     printf("[server]Received message of client %d: ", id);
-
-    for (; p - buf < *buf; )
-      printf("%02x", *p++);
-
-    printf(" (length=%d)\n", *buf);
+    __print_message(buf);
 
     /* Parse un message. */
     if (__parse_event(buf + 1, *buf - 1, value) == -1) {
@@ -335,10 +343,14 @@ static void __broadcast (Socket_set *ss, Handler_value *value) {
   *buf = p - buf;
 
   /* Broadcast. */
-  if (*buf - 1 > 0)
+  if (*buf - 1 > 0) {
+    printf("[server]Broadcast: ");
+    __print_message(buf);
+
     for (i--; i > 0; i--)
       if ((sock = socket_set_get(ss, i)) != -1)
         tcp_send(sock, buf, *buf);
+  }
 
   /* Reset. */
   value->to_set = 0;
