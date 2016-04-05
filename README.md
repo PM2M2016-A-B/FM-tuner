@@ -14,7 +14,7 @@ The default program path is: `/bin/fmtuner`.
 
 ## Usage
 
-You can get a list of useful options by in this way:
+You can get a list of useful options in this way:
 
 ```
 > /bin/fmtuner --help
