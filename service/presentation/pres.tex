@@ -1,41 +1,24 @@
-% Class
 \documentclass{beamer}
 
-% Base
-\usepackage[francais]{babel}
-\usepackage[T1]{fontenc} 
-\usepackage[utf8]{inputenc} 
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
 
-\usepackage{color, colortbl}
 \usepackage{fancyvrb}
 \usepackage{enumitem}
-\usepackage{multicol}
-\usepackage{multirow}
-\usepackage{xcolor}
-\usepackage{algpseudocode}
-\usepackage{array}
 
 % Règle les conflits beamer/enumitem
 \setitemize{label=\usebeamerfont*{itemize item}
 \usebeamercolor[fg]{itemize item}
 \usebeamertemplate{itemize item}}
-  
-% Thème
+
 \usetheme{Antibes}
-
-% Titre
 \title{M2M - 2016 - RDSMining}
-
-% Dossier images
 \graphicspath{{imgs/}}
-
-% Auteur, lieu, date
-\author{ABHAMON Ronan \\~ BIGARD Florian}
-
+\author{Ronan ABHAMON \\~ Florian BIGARD}
 \institute{Université Joseph Fourier}
 \date{\today}
 
-% Puce triangle
 \setbeamertemplate{itemize item}[triangle]
 
 % A chaque changement de section, affichage de la section dans une diapo
@@ -51,21 +34,17 @@
 
 % Numéros de pages
 \defbeamertemplate*{footline}{shadow theme}
-{%
-	\leavevmode%
-	\hbox{\begin{beamercolorbox}[wd=1.0\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm plus1fil,rightskip=.3cm]{author in head/foot}%
+{
+	\leavevmode
+	\hbox{\begin{beamercolorbox}[wd=1.0\paperwidth,ht=2.5ex,dp=1.125ex,leftskip=.3cm plus1fil,rightskip=.3cm]{author in head/foot}
     	\usebeamerfont{author in head/foot}\insertframenumber\,/\,\inserttotalframenumber\hfill
-	\end{beamercolorbox}%
-}%
-	\vskip0pt%
+	\end{beamercolorbox}
 }
-
-\newcolumntype{M}[1]{>{\raggedright}m{#1}}
-\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
+	\vskip0pt
+}
 
 \begin{document}
 
-% Diapo de présentation
 \begin{frame}
 	\titlepage
 \end{frame}
@@ -79,9 +58,44 @@
 
 \section{Beagleboard black}
 
-\subsection{Service}
+\subsection{FM-Tuner Service}
 
-\subsection{Service client}
+\begin{frame}[fragile]
+	\begin{block}{FM-Tuner Service}
+		\begin{itemize}
+			\item A high level si4703 service (C gnu99 program).
+			\item Working on a single thread (RDS parser + server).
+			\item Non-blocking I/O.
+			\item Working with systemd.
+			\item Send changes/notifications to clients.
+		\end{itemize}
+	\end{block}
+	\begin{block}{Messages}
+		\begin{itemize}
+			\item A specific protocol working in TCP:
+		\end{itemize}
+		\begin{center}
+			\begin{minipage}{10cm}
+				\begin{verbatim}
+LENGTH TYPE_1 VALUE_1 [TYPE_N VALUE_N...]
+				\end{verbatim}
+			\end{minipage}
+		\end{center}
+	\end{block}
+\end{frame}
+
+\subsection{FM-Tuner Message Broker}
+
+\begin{frame}
+	\begin{block}{FM-Tuner Message Broker}
+		\begin{itemize}
+			\item A simple broker. (nodeJS program, ES7)
+			\item Set the channel/volume. (Send message to service)
+			\item Print service notifications.
+			\item Send by MQTT the radio name.
+		\end{itemize}
+	\end{block}
+\end{frame}
 
 \section{Server}
 
@@ -102,22 +116,3 @@
 \end{frame}
 
 \end{document}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
