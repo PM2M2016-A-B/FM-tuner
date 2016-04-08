@@ -28,6 +28,10 @@ Usage: ./bin/fmtuner [OPTION]...
       --seek           Seek to locate radio stations.
 ```
 
+## Service
+
+You can use this program with systemd, you must define (with`/bin/fmtuner` options) your BeagleBone pins in `fmtuner.service` before the installation.
+
 ## License
 
 GPLv3 © [GNU General Public License](http://www.gnu.org/licenses/gpl-3.0.en.html)
