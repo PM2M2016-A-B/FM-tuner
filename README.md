@@ -4,7 +4,7 @@ FM-tuner is a server working on BeagleBoard. It uses the [si4703 tuner] (https:/
 
 It works on the principle of subscription, It only transmits different data to each message. Consequently two successive messages cannot contain the same data.
 
-__Example__: The following RDS message: `FLASH_FM` is parsed by the service, it is broadcasted to the possible clients. If, it is again parsed by the service, it is not returned.
+__Example:__ The following RDS message: `FLASH_FM` is parsed by the service, it is broadcasted to the possible clients. If, it is again parsed by the service, it is not returned.
 
 ## Install
 
@@ -32,9 +32,11 @@ Usage: ./bin/fmtuner [OPTION]...
       --seek           Seek to locate radio stations.
 ```
 
-## Service
+You can use this program with systemd, you must define your BeagleBone pins in `fmtuner.service` using parameters before the installation.
 
-You can use this program with systemd, you must define (with`/bin/fmtuner` options) your BeagleBone pins in `fmtuner.service` before the installation.
+## Client
+
+A client is given in this repository. It is programmed in `nodeJS`, this code is not complicated and can transmit radio names given by the service to a `MQTT broker`. This client supports all messages currently sent by the service and can working on a BeagleBone or on another machine. However, beware ! You need a recent version of ` nodeJS` to use this client because it works with the `ES7 features`.
 
 ## License
 
