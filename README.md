@@ -1,6 +1,10 @@
 # Fm tuner (si4703)
 
-TODO: Description
+FM-tuner is a server working on BeagleBoard. It uses the [si4703 tuner] (https://www.sparkfun.com/products/12938) to listen radio stations, and transmits RDS data to clients as well as information of the volume or the current channel. 
+
+It works on the principle of subscription, It only transmits different data to each message. Consequently two successive messages cannot contain the same data.
+
+__Example__: The following RDS message: `FLASH_FM` is parsed by the service, it is broadcasted to the possible clients. If, it is again parsed by the service, it is not returned.
 
 ## Install
 
