@@ -44,7 +44,7 @@ A messages uses this structure:
 ```
 MSG_LENGTH(1 byte) TYPE_1(1 byte) VALUE_1(n bytes) [TYPE_N VALUE_N...]
 ```
-And a radio name, radio text
+
 ### Service to client
 
 Supported messages:
@@ -62,6 +62,26 @@ __Example:__ The server/service sends the volume 9 and channel 937 like this:
 ```
 0x07 0x01 0x00 0x09 0x02 0x03 0xA9
 ```
+__Note:__ The EVENT_MALFORMED_MESSAGE is sent to a client which made a bad request.
+
+### Client to service
+
+Supported messages:
+
+```
+EVENT_MALFORMED_MESSAGE = 0x00 (no value)
+EVENT_VOLUME            = 0x01 (value = 1 byte)
+EVENT_CHANNEL           = 0x02 (value = 2 bytes)
+EVENT_SEEKUP            = 0x03 (no value)
+EVENT_SEEKDOWN          = 0x04 (no value)
+```
+
+__Example:__ A client set the volume to 3 and seek up:
+
+```
+0x04 0x01 0x03 0x03
+```
+
 ## License
 
 GPLv3 © [GNU General Public License](http://www.gnu.org/licenses/gpl-3.0.en.html)
