@@ -226,10 +226,8 @@ int fm_tuner_write_registers (Fm_tuner *fm_tuner) {
   for (i = 0x02, j = 0; i <= 0x07; i++, j++)
     regs[j] = htons(fm_tuner->regs[i]);
 
-  if (i2c_write(fm_tuner->bus, (void *)regs, size) != size) {
-    error("Unable to write registers.");
-    return -1;
-  }
+  if (i2c_write(fm_tuner->bus, (void *)regs, size) != size)
+    return error("Unable to write registers.");
 
   return 0;
 }
@@ -241,10 +239,8 @@ int fm_tuner_read_registers (Fm_tuner *fm_tuner) {
   int i, j;
 
   /* Lecture de tous les registres, de 0x0A à 0x0F puis de 0x00 à 0x09. */
-  if (i2c_read(fm_tuner->bus, (void *)regs, size) != size) {
-    error("Unable to read registers.");
-    return -1;
-  }
+  if (i2c_read(fm_tuner->bus, (void *)regs, size) != size)
+    return error("Unable to read registers.");
 
   /* Attention: données en entrée en big-endian ! */
   for (i = 0x0A, j = 0; i <= 0x0F; i++, j++)
