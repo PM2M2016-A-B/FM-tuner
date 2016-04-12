@@ -74,7 +74,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 install: $(BIN)
 	@echo "Installation..."
-	mv $(BIN_DIR)/$(BIN) /bin/ && mv fmtuner.service /lib/systemd/system/
+	cp $(BIN_DIR)/$(BIN) /bin/ && cp fmtuner.service /lib/systemd/system/
 
 clean:
 	@rm -f $(OBJ)
