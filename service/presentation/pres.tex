@@ -21,14 +21,6 @@
 
 \setbeamertemplate{itemize item}[triangle]
 
-% A chaque changement de section, affichage de la section dans une diapo
-\AtBeginSection[ ]
-{
-	\begin{frame}
- 		\tableofcontents[currentsection,hideothersubsections]
- 	\end{frame}
-}
-
 % Marges du diapo
 \setbeamersize{text margin left=0.8cm, text margin right=0.8cm}
 
@@ -56,7 +48,7 @@
 			\item Radio Data System: A communication protocol.
 			\item Transmit data blocks. (148.4375 bytes per second)
 			\item Transmit data like current music of a radio station.
-		\end{itemize}
+		\end{itemize}		
 	\end{block}
 \end{frame}
 
@@ -125,5 +117,18 @@ LENGTH TYPE_1 VALUE_1 [TYPE_N VALUE_N...]
 		\includegraphics[scale=0.20]{frequence.png}
 	\end{center}
 \end{frame}
+
+\section{Conclusion}
+
+\begin{frame}
+	\begin{itemize}
+		\item A complete working protocol on BeagleBone.
+		\item Can be used with other protocols than MQTT.
+	\end{itemize}
+\end{frame}
+
+
+
+
 
 \end{document}
