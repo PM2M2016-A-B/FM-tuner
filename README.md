@@ -36,7 +36,7 @@ You can use this program with systemd, you must define your BeagleBone pins in `
 
 ## Client
 
-A client is given in this repository. It is programmed in `nodeJS`, this code is not complicated and can transmit radio names given by the service to a `MQTT broker`. This client supports all messages currently sent by the service and can working on a BeagleBone or on another machine. However, beware ! You need a recent version of ` nodeJS` to use this client because it works with the `ES7 features`. See the results whith Kibana [here](https://github.com/PM2M2016-A-B/FM-tuner/blob/master/service/presentation/pres.pdf).
+A client is given in this repository. It is programmed in `nodeJS`, this code is not complicated and can transmit radio names given by the service to a `MQTT broker`. This client supports all messages currently sent by the service and can working on a BeagleBone or on another machine. However, beware ! You need a recent version of ` nodeJS` to use this client because it works with the `ES7 features`. See the results whith Kibana [here](https://github.com/PM2M2016-A-B/FM-tuner/blob/master/presentation/pres.pdf).
 
 ## Messages
 
